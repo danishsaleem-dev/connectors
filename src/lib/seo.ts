@@ -35,7 +35,7 @@ export function organizationLd() {
     url: SITE_URL,
     slogan: site.tagline,
     description: site.description,
-    logo: absoluteUrl("/logo.svg"),
+    logo: absoluteUrl("/logo.png"),
     email: site.email.general,
     telephone: primaryOffice.phone.href,
     address: postalAddressLd(primaryOffice),
@@ -84,7 +84,7 @@ export function serviceLd(input: {
       name: site.name,
       url: SITE_URL,
     },
-    areaServed: site.address.country,
+    areaServed: primaryOffice.address.country,
   };
 }
 
