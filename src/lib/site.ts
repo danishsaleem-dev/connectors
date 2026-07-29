@@ -94,6 +94,17 @@ export const site = {
     instagram: { label: "Instagram", url: "https://instagram.com/connectors" },
     facebook: { label: "Facebook", url: "https://facebook.com/connectors" },
   },
+
+  /**
+   * TODO: replace with the real App Store / Google Play listing URLs once the
+   * app is published. Left as "#" renders the store buttons in a "coming
+   * soon" state rather than linking anywhere — see StoreBadge in
+   * AudienceAppPromo.tsx.
+   */
+  appLinks: {
+    ios: "#",
+    android: "#",
+  },
 } as const;
 
 /** "26-28 Mount Row, London W1K 3SQ, United Kingdom" */
