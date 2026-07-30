@@ -5,7 +5,18 @@ import { getStorageAdmin, STORAGE_BUCKET } from "@/lib/storage/client";
 
 const PURPOSES = {
   property: {
-    allowed: ["image/jpeg", "image/png", "image/webp", "video/mp4", "video/quicktime"],
+    // HEIC/HEIF is the default iPhone camera format — photos are only ever
+    // stored and linked here, never decoded or rendered inline, so there's no
+    // browser-compatibility reason to reject a format we don't display anyway.
+    allowed: [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/heic",
+      "image/heif",
+      "video/mp4",
+      "video/quicktime",
+    ],
     maxBytes: 50 * 1024 * 1024,
   },
   document: {

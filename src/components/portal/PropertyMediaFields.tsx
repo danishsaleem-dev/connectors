@@ -46,8 +46,8 @@ export function PropertyMediaFields({ organizationId }: { organizationId: string
         Array.from(files).map((file) => uploadToStorage(file, "property", organizationId)),
       );
       setPhotos((prev) => [...prev, ...uploaded]);
-    } catch {
-      setError("Couldn't upload one or more photos.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't upload one or more photos.");
     } finally {
       setUploading(false);
     }
@@ -60,8 +60,8 @@ export function PropertyMediaFields({ organizationId }: { organizationId: string
     try {
       const path = await uploadToStorage(file, "property", organizationId);
       setVideo(path);
-    } catch {
-      setError("Couldn't upload the video.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't upload the video.");
     } finally {
       setUploading(false);
     }

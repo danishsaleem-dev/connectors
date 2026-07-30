@@ -30,8 +30,8 @@ export function DocumentUpload({ organizationId }: { organizationId: string }) {
     setError(null);
     try {
       setPath(await uploadToStorage(file, "document", organizationId));
-    } catch {
-      setError("Couldn't upload that file.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't upload that file.");
     } finally {
       setUploading(false);
     }
