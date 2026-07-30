@@ -6,14 +6,24 @@ import { getDb } from "@/lib/db/client";
 import { getProfile } from "@/lib/db/queries";
 import { documents, messages, organizations, properties, requests, users } from "@/lib/db/schema";
 import { ActionForm } from "@/components/portal/ActionForm";
+import { AddressPicker } from "@/components/portal/AddressPicker";
 import { MessageThread } from "@/components/portal/MessageThread";
 import { PortalHeader } from "@/components/portal/PortalHeader";
 import { ProfileFields } from "@/components/portal/ProfileFields";
+import { PropertyMediaFields } from "@/components/portal/PropertyMediaFields";
+import { ResetPasswordButton } from "@/components/portal/ResetPasswordButton";
 import { EmptyState, ListRow, Panel, Pill } from "@/components/portal/ui";
-import { Field, Input, Select } from "@/components/ui";
-import { createDocument, postMessage, updateOrganization } from "@/lib/portal/actions";
+import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui";
+import {
+  createDocument,
+  deleteProperty,
+  postMessage,
+  saveProperty,
+  updateOrganization,
+} from "@/lib/portal/actions";
 import {
   PROPERTY_STATUS_LABEL,
+  PROPERTY_TYPE_LABEL,
   REQUEST_STATUS_LABEL,
   REQUEST_TYPE_LABEL,
   orgTypeBySlug,
@@ -97,7 +107,12 @@ export default async function AdminOrgDetailPage({
           ) : (
             <div className="space-y-2">
               {orgUsers.map((u) => (
-                <ListRow key={u.id} title={u.name} meta={u.email} />
+                <ListRow
+                  key={u.id}
+                  title={u.name}
+                  meta={u.email}
+                  trailing={<ResetPasswordButton userId={u.id} />}
+                />
               ))}
             </div>
           )}
@@ -115,14 +130,84 @@ export default async function AdminOrgDetailPage({
                     title={property.title}
                     meta={`${property.city}${property.sizeSqft ? ` · ${property.sizeSqft} sq ft` : ""}`}
                     trailing={
-                      <Pill tone="neutral">
-                        {PROPERTY_STATUS_LABEL[property.status] ?? property.status}
-                      </Pill>
+                      <div className="flex items-center gap-3">
+                        <Pill tone="neutral">
+                          {PROPERTY_STATUS_LABEL[property.status] ?? property.status}
+                        </Pill>
+                        <ActionForm
+                          action={deleteProperty}
+                          submitLabel="Remove"
+                          pendingLabel="…"
+                          successMessage="Removed."
+                          hiddenFields={{ id: property.id }}
+                          size="sm"
+                          variant="secondary"
+                          className="sm:grid-cols-1"
+                        />
+                      </div>
                     }
                   />
                 ))}
               </div>
             )}
+            <div className="mt-5 border-t border-[var(--border)] pt-5">
+              <p className="mb-3 text-[11px] uppercase tracking-[0.14em] text-[var(--muted)]">
+                Add a property on their behalf
+              </p>
+              <ActionForm
+                action={saveProperty}
+                submitLabel="Add property"
+                pendingLabel="Adding…"
+                successMessage="Property added."
+                hiddenFields={{ organizationId: org.id }}
+                size="sm"
+              >
+                <Field label="Title" className="sm:col-span-2">
+                  <Input name="title" required placeholder="e.g. Ground floor unit, Mount Row" />
+                </Field>
+                <Field label="Type">
+                  <Select name="propertyType" defaultValue="retail_shop">
+                    {Object.entries(PROPERTY_TYPE_LABEL).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field label="Status">
+                  <Select name="status" defaultValue="available">
+                    {Object.entries(PROPERTY_STATUS_LABEL).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field label="Area / district">
+                  <Input name="area" />
+                </Field>
+                <AddressPicker />
+                <Field label="Size (sq ft)">
+                  <Input name="sizeSqft" type="number" />
+                </Field>
+                <Field label="Floor level">
+                  <Input name="floorLevel" />
+                </Field>
+                <Field label="Rent per month">
+                  <Input name="rentAmount" type="number" />
+                </Field>
+                <Field label="Available from">
+                  <Input name="availableFrom" />
+                </Field>
+                <div className="flex items-end pb-2 sm:col-span-2">
+                  <Checkbox name="parkingAvailable" label="Parking available" />
+                </div>
+                <Field label="Description" className="sm:col-span-2">
+                  <Textarea name="description" rows={3} />
+                </Field>
+                <PropertyMediaFields />
+              </ActionForm>
+            </div>
           </Panel>
         )}
 

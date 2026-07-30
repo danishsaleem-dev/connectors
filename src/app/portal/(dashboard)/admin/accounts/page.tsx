@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/current-user";
 import { getDb } from "@/lib/db/client";
 import { organizations, users } from "@/lib/db/schema";
 import { ActionForm } from "@/components/portal/ActionForm";
 import { PortalHeader } from "@/components/portal/PortalHeader";
+import { ResetPasswordButton } from "@/components/portal/ResetPasswordButton";
 import { ListRow, Panel, Pill } from "@/components/portal/ui";
 import { Checkbox, Field, Input, Select } from "@/components/ui";
 import { createPortalUser } from "@/lib/portal/actions";
@@ -60,18 +62,30 @@ export default async function AdminAccountsPage() {
       <div className="mt-8 space-y-2">
         {allUsers.map((user) => {
           const org = user.organizationId ? orgById.get(user.organizationId) : undefined;
+          const orgHref = org ? `/portal/admin/${orgTypeMeta(org.type).slug}/${org.id}` : undefined;
           return (
             <ListRow
               key={user.id}
-              href={
-                org ? `/portal/admin/${orgTypeMeta(org.type).slug}/${org.id}` : undefined
+              // The row itself isn't a link — trailing holds a real button,
+              // and nesting a <form> inside an <a> is invalid HTML. The org
+              // name is the click target instead.
+              title={
+                orgHref ? (
+                  <Link href={orgHref} className="hover:text-violet-600">
+                    {user.name}
+                  </Link>
+                ) : (
+                  user.name
+                )
               }
-              title={user.name}
               meta={[user.email, org?.name].filter(Boolean).join(" · ")}
               trailing={
-                <Pill tone={user.isAdmin ? "violet" : "neutral"}>
-                  {user.isAdmin ? "Admin" : org ? orgTypeMeta(org.type).singular : "No org"}
-                </Pill>
+                <div className="flex items-center gap-3">
+                  <Pill tone={user.isAdmin ? "violet" : "neutral"}>
+                    {user.isAdmin ? "Admin" : org ? orgTypeMeta(org.type).singular : "No org"}
+                  </Pill>
+                  <ResetPasswordButton userId={user.id} />
+                </div>
               }
             />
           );

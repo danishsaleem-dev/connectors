@@ -47,6 +47,15 @@ function num(formData: FormData, key: string) {
   return Number.isFinite(parsed) ? Math.round(parsed) : null;
 }
 
+/** Unlike num(), doesn't round — used for latitude/longitude, where rounding
+ * to the nearest integer degree would put every pin somewhere else entirely. */
+function float(formData: FormData, key: string) {
+  const raw = String(formData.get(key) ?? "").trim();
+  if (!raw) return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function bool(formData: FormData, key: string) {
   return formData.get(key) != null;
 }
@@ -267,6 +276,8 @@ export async function saveProperty(
         "retail_shop") as (typeof properties.$inferInsert)["propertyType"],
       area: str(formData, "area"),
       mapAddress: str(formData, "mapAddress"),
+      latitude: float(formData, "latitude"),
+      longitude: float(formData, "longitude"),
       sizeSqft: num(formData, "sizeSqft"),
       floorLevel: str(formData, "floorLevel"),
       parkingAvailable: bool(formData, "parkingAvailable"),
@@ -523,6 +534,49 @@ export async function createPortalUser(
       err,
       "Couldn't create that account — check the email isn't already in use.",
     );
+  }
+}
+
+/**
+ * The only password-recovery path in the portal: admin issues a fresh
+ * temporary password for an existing account, in place — no new account, no
+ * self-service email-a-link flow (that would need a token table and a
+ * guaranteed-configured mailer). Same generate/hash/email-or-show-once
+ * pattern as createPortalUser.
+ */
+export async function resetUserPassword(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdminUser();
+    const userId = str(formData, "userId");
+    if (!userId) return { ok: false, error: "Missing account." };
+
+    const db = getDb();
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!user) return { ok: false, error: "Account not found." };
+
+    const tempPassword = generateTempPassword();
+    const passwordHash = await hashPassword(tempPassword);
+    await db.update(users).set({ passwordHash }).where(eq(users.id, userId));
+
+    if (process.env.RESEND_API_KEY) {
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      await resend.emails.send({
+        from: process.env.CONTACT_FROM_EMAIL ?? "Connectors Portal <onboarding@resend.dev>",
+        to: user.email,
+        subject: "Your Connectors portal password was reset",
+        text: `Hi ${user.name},\n\nYour password for the Connectors partner portal has been reset.\n\nEmail: ${user.email}\nNew temporary password: ${tempPassword}\n\nSign in and you're in.`,
+      });
+      revalidatePortal();
+      return { ok: true };
+    }
+
+    revalidatePortal();
+    return { ok: true, tempPassword };
+  } catch (err) {
+    return fail("resetUserPassword", err, "Couldn't reset that password.");
   }
 }
 

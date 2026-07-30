@@ -1,6 +1,7 @@
 import { clsx } from "clsx";
 import Link from "next/link";
 import { ArrowUpRight, Check, type LucideIcon } from "lucide-react";
+import { forwardRef } from "react";
 import type {
   ButtonHTMLAttributes,
   InputHTMLAttributes,
@@ -367,12 +368,11 @@ export function Field({
 const inputCls =
   "w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3.5 py-2.5 text-sm text-[var(--foreground)] outline-none transition-colors placeholder:text-[var(--muted)]/60 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20";
 
-export function Input({
-  className,
-  ...props
-}: InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className={clsx(inputCls, className)} />;
-}
+export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
+  function Input({ className, ...props }, ref) {
+    return <input ref={ref} {...props} className={clsx(inputCls, className)} />;
+  },
+);
 
 export function Textarea({
   className,

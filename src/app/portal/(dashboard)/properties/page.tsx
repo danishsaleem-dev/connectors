@@ -5,7 +5,9 @@ import { requireParticipant } from "@/lib/auth/current-user";
 import { getDb } from "@/lib/db/client";
 import { properties } from "@/lib/db/schema";
 import { ActionForm } from "@/components/portal/ActionForm";
+import { AddressPicker } from "@/components/portal/AddressPicker";
 import { PortalHeader } from "@/components/portal/PortalHeader";
+import { PropertyMediaFields } from "@/components/portal/PropertyMediaFields";
 import { EmptyState, Panel, Pill, formatMoney } from "@/components/portal/ui";
 import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui";
 import { deleteProperty, saveProperty } from "@/lib/portal/actions";
@@ -63,18 +65,10 @@ export default async function ParticipantPropertiesPage() {
               ))}
             </Select>
           </Field>
-          <Field label="City">
-            <Input name="city" required />
-          </Field>
-          <Field label="Country">
-            <Input name="country" />
-          </Field>
           <Field label="Area / district">
             <Input name="area" />
           </Field>
-          <Field label="Full address" hint="Shown as plain text for now">
-            <Input name="mapAddress" />
-          </Field>
+          <AddressPicker />
           <Field label="Size (sq ft)">
             <Input name="sizeSqft" type="number" />
           </Field>
@@ -93,16 +87,7 @@ export default async function ParticipantPropertiesPage() {
           <Field label="Description" className="sm:col-span-2">
             <Textarea name="description" rows={3} />
           </Field>
-          <Field
-            label="Photo links"
-            hint="One per line — paste a link to each photo"
-            className="sm:col-span-2"
-          >
-            <Textarea name="photos" rows={3} placeholder="https://…" />
-          </Field>
-          <Field label="Video link" hint="Optional" className="sm:col-span-2">
-            <Input name="video" type="url" placeholder="https://…" />
-          </Field>
+          <PropertyMediaFields />
         </ActionForm>
       </Panel>
 

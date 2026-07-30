@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.23",
+    "@vercel/blob": "^2.6.1",
     "ai": "^7.0.40",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
