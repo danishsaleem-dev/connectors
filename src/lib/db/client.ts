@@ -29,12 +29,9 @@ export function getDb() {
         prepare: false,
         // Without an idle_timeout, this connection stays open indefinitely —
         // fine for a long-lived server, but in a serverless function nothing
-        // ever tells it to let go. Supabase's pooler only has a limited
-        // number of backend connections; enough invocations holding one open
-        // exhausts the pool and every new connection (including unrelated
-        // ones) queues behind it, which is what "canceling statement due to
-        // statement timeout" and requests hanging until Vercel's own function
-        // timeout were actually caused by — not a bad connection string.
+        // ever tells it to let go, and Supabase's pooler only has a limited
+        // number of backend connections to hand out. Good serverless hygiene
+        // regardless of what else is going on.
         idle_timeout: 20,
         // Recycle the connection periodically rather than trusting a single
         // long-lived socket in a network path (serverless host → pooler)
