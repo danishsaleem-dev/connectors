@@ -18,7 +18,11 @@ export function getDb() {
         "DATABASE_URL is not set — add it to .env.local (any standard Postgres connection string works: Neon, Supabase, Railway, or a local instance).",
       );
     }
-    cached = drizzle(postgres(url, { max: 1 }), { schema });
+    // prepare: false is required against Supabase's transaction-mode pooler
+    // (port 6543) — pgbouncer in that mode can't hold a prepared statement
+    // across pooled connections. Harmless against a direct connection too, so
+    // it's left on unconditionally rather than branching on the URL.
+    cached = drizzle(postgres(url, { max: 1, prepare: false }), { schema });
   }
   return cached;
 }

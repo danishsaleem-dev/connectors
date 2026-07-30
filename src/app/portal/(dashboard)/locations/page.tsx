@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { requireParticipant } from "@/lib/auth/current-user";
 import { listAllProperties } from "@/lib/db/queries";
 import { PortalHeader } from "@/components/portal/PortalHeader";
+import { PropertyMedia } from "@/components/portal/PropertyMedia";
 import { EmptyState, Panel, Pill, formatMoney } from "@/components/portal/ui";
 import { PROPERTY_STATUS_LABEL, PROPERTY_TYPE_LABEL } from "@/lib/portal/domain";
 
@@ -66,31 +67,7 @@ export default async function ParticipantLocationsPage() {
                     {property.description && (
                       <p className="mt-2 whitespace-pre-wrap text-sm">{property.description}</p>
                     )}
-                    {(property.photos?.length || property.video) && (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {property.photos?.map((url) => (
-                          <a
-                            key={url}
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-violet-600 underline underline-offset-4"
-                          >
-                            Photo
-                          </a>
-                        ))}
-                        {property.video && (
-                          <a
-                            href={property.video}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-violet-600 underline underline-offset-4"
-                          >
-                            Video
-                          </a>
-                        )}
-                      </div>
-                    )}
+                    <PropertyMedia photos={property.photos} video={property.video} />
                   </div>
                 </div>
               </Panel>

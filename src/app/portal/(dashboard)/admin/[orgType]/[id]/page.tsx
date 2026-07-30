@@ -7,8 +7,10 @@ import { getProfile } from "@/lib/db/queries";
 import { documents, messages, organizations, properties, requests, users } from "@/lib/db/schema";
 import { ActionForm } from "@/components/portal/ActionForm";
 import { AddressPicker } from "@/components/portal/AddressPicker";
+import { DocumentUpload } from "@/components/portal/DocumentUpload";
 import { MessageThread } from "@/components/portal/MessageThread";
 import { PortalHeader } from "@/components/portal/PortalHeader";
+import { DocumentLink } from "@/components/portal/PropertyMedia";
 import { ProfileFields } from "@/components/portal/ProfileFields";
 import { PropertyMediaFields } from "@/components/portal/PropertyMediaFields";
 import { ResetPasswordButton } from "@/components/portal/ResetPasswordButton";
@@ -205,7 +207,7 @@ export default async function AdminOrgDetailPage({
                 <Field label="Description" className="sm:col-span-2">
                   <Textarea name="description" rows={3} />
                 </Field>
-                <PropertyMediaFields />
+                <PropertyMediaFields organizationId={org.id} />
               </ActionForm>
             </div>
           </Panel>
@@ -244,16 +246,7 @@ export default async function AdminOrgDetailPage({
             orgDocs.map((doc) => (
               <ListRow
                 key={doc.id}
-                title={
-                  <a
-                    href={doc.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-violet-600 underline underline-offset-4"
-                  >
-                    {doc.title}
-                  </a>
-                }
+                title={<DocumentLink url={doc.url}>{doc.title}</DocumentLink>}
                 trailing={<Pill tone="neutral">{doc.kind}</Pill>}
               />
             ))
@@ -277,9 +270,7 @@ export default async function AdminOrgDetailPage({
                 <option value="agreement">Agreement</option>
               </Select>
             </Field>
-            <Field label="Link" className="sm:col-span-2">
-              <Input name="url" type="url" required placeholder="https://…" />
-            </Field>
+            <DocumentUpload organizationId={org.id} />
           </ActionForm>
         </div>
       </Panel>

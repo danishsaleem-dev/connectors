@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { requireParticipant } from "@/lib/auth/current-user";
 import { getDb } from "@/lib/db/client";
 import { documents } from "@/lib/db/schema";
+import { DocumentLink } from "@/components/portal/PropertyMedia";
 import { PortalHeader } from "@/components/portal/PortalHeader";
 import { EmptyState, ListRow, Panel, Pill } from "@/components/portal/ui";
 
@@ -31,16 +32,7 @@ export default async function ParticipantDocumentsPage() {
             orgDocs.map((doc) => (
               <ListRow
                 key={doc.id}
-                title={
-                  <a
-                    href={doc.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-violet-600 underline underline-offset-4"
-                  >
-                    {doc.title}
-                  </a>
-                }
+                title={<DocumentLink url={doc.url}>{doc.title}</DocumentLink>}
                 trailing={<Pill tone="neutral">{doc.kind}</Pill>}
               />
             ))

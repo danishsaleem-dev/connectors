@@ -1,19 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { upload } from "@vercel/blob/client";
 import { Field, FileInput, Input, Textarea } from "@/components/ui";
-
-const UPLOAD_ENABLED = process.env.NEXT_PUBLIC_ENABLE_FILE_UPLOAD === "true";
+import { UPLOAD_ENABLED, uploadToStorage } from "@/lib/storage/upload-client";
 
 /**
- * Real drag-and-drop upload, direct from the browser to Vercel Blob — but
- * only once BLOB_READ_WRITE_TOKEN is configured and
- * NEXT_PUBLIC_ENABLE_FILE_UPLOAD is set to "true". Until then this renders
- * the same paste-in-link fields as before, so the property form works
- * identically with zero setup.
+ * Real drag-and-drop upload, direct from the browser to Supabase Storage —
+ * but only once Supabase is configured and NEXT_PUBLIC_ENABLE_FILE_UPLOAD is
+ * set to "true". Until then this renders the same paste-in-link fields as
+ * before, so the property form works identically with zero setup.
+ *
+ * Hidden inputs carry a private bucket *path*, not a public URL — the bucket
+ * has no public read policy, so viewing later goes through
+ * resolveMediaUrl()/<PropertyMedia> rather than the raw value here.
  */
-export function PropertyMediaFields() {
+export function PropertyMediaFields({ organizationId }: { organizationId: string }) {
   const [photos, setPhotos] = useState<string[]>([]);
   const [video, setVideo] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -42,14 +43,9 @@ export function PropertyMediaFields() {
     setError(null);
     try {
       const uploaded = await Promise.all(
-        Array.from(files).map((file) =>
-          upload(file.name, file, {
-            access: "public",
-            handleUploadUrl: "/api/property-upload",
-          }),
-        ),
+        Array.from(files).map((file) => uploadToStorage(file, "property", organizationId)),
       );
-      setPhotos((prev) => [...prev, ...uploaded.map((u) => u.url)]);
+      setPhotos((prev) => [...prev, ...uploaded]);
     } catch {
       setError("Couldn't upload one or more photos.");
     } finally {
@@ -62,11 +58,8 @@ export function PropertyMediaFields() {
     setUploading(true);
     setError(null);
     try {
-      const uploaded = await upload(file.name, file, {
-        access: "public",
-        handleUploadUrl: "/api/property-upload",
-      });
-      setVideo(uploaded.url);
+      const path = await uploadToStorage(file, "property", organizationId);
+      setVideo(path);
     } catch {
       setError("Couldn't upload the video.");
     } finally {

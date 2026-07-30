@@ -7,6 +7,7 @@ import { properties } from "@/lib/db/schema";
 import { ActionForm } from "@/components/portal/ActionForm";
 import { AddressPicker } from "@/components/portal/AddressPicker";
 import { PortalHeader } from "@/components/portal/PortalHeader";
+import { PropertyMedia } from "@/components/portal/PropertyMedia";
 import { PropertyMediaFields } from "@/components/portal/PropertyMediaFields";
 import { EmptyState, Panel, Pill, formatMoney } from "@/components/portal/ui";
 import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui";
@@ -87,7 +88,7 @@ export default async function ParticipantPropertiesPage() {
           <Field label="Description" className="sm:col-span-2">
             <Textarea name="description" rows={3} />
           </Field>
-          <PropertyMediaFields />
+          <PropertyMediaFields organizationId={organization.id} />
         </ActionForm>
       </Panel>
 
@@ -127,12 +128,7 @@ export default async function ParticipantPropertiesPage() {
                     {property.description && (
                       <p className="mt-2 whitespace-pre-wrap text-sm">{property.description}</p>
                     )}
-                    {(property.photos?.length || property.video) && (
-                      <p className="mt-2 text-xs text-[var(--muted)]">
-                        {property.photos?.length ?? 0} photo(s)
-                        {property.video ? " · video attached" : ""}
-                      </p>
-                    )}
+                    <PropertyMedia photos={property.photos} video={property.video} />
                   </div>
 
                   <ActionForm
