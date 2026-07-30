@@ -114,13 +114,20 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <ButtonLink
-            href="/for-brands"
-            size="sm"
-            className="hidden md:inline-flex"
-          >
-            Start a conversation
-          </ButtonLink>
+          {/* Wrapper carries the responsive visibility instead of passing it
+              as a className override to ButtonLink — both variants hardcode
+              their own display utility (inline-flex), and Tailwind v4 orders
+              same-property utilities by internal category rather than by
+              source order, so `hidden` from a later-appended className
+              doesn't reliably beat it. */}
+          <div className="hidden items-center gap-2 md:flex">
+            <ButtonLink href="/portal/login" variant="ghost" size="sm" showIcon={false}>
+              Login
+            </ButtonLink>
+            <ButtonLink href="/for-brands" size="sm">
+              Start a conversation
+            </ButtonLink>
+          </div>
           <button
             type="button"
             onClick={() => setMobileOpen((v) => !v)}
@@ -186,9 +193,19 @@ export function Header() {
                 ))}
               </MobileGroup>
 
-              <ButtonLink href="/for-brands" className="w-full">
-                Start a conversation
-              </ButtonLink>
+              <div className="flex flex-col gap-3">
+                <ButtonLink href="/for-brands" className="w-full">
+                  Start a conversation
+                </ButtonLink>
+                <ButtonLink
+                  href="/portal/login"
+                  variant="secondary"
+                  showIcon={false}
+                  className="w-full"
+                >
+                  Partner login
+                </ButtonLink>
+              </div>
             </div>
           </motion.div>
         )}

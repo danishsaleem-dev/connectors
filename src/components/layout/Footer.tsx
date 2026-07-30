@@ -103,7 +103,12 @@ export function Footer() {
           <p>
             © {year} {site.name}. All rights reserved.
           </p>
-          <p>{site.tagline}</p>
+          <div className="flex items-center gap-6">
+            <p>{site.tagline}</p>
+            <Link href="/portal/login" className="transition-colors hover:text-white/70">
+              Partner login
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

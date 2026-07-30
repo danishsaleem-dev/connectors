@@ -1,0 +1,305 @@
+import {
+  boolean,
+  doublePrecision,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+  varchar,
+} from "drizzle-orm/pg-core";
+
+/**
+ * A flat, role-scoped portal — deliberately not a matching engine. Each
+ * participant type signs up, fills in a profile, and does exactly one more
+ * thing: a brand browses listed properties, a landlord/developer lists them,
+ * a franchisee/investor submits a request. Nothing here links one
+ * organization to another — no cross-module visibility, no admin-run
+ * matchmaking pipeline. Connectors staff review requests and enquiries and
+ * follow up outside the system.
+ */
+
+export const orgTypeEnum = pgEnum("org_type", [
+  "brand",
+  "franchisee",
+  "landlord",
+  "developer",
+  "investor",
+]);
+
+export const orgStatusEnum = pgEnum("org_status", ["pending", "active", "suspended"]);
+
+export const organizations = pgTable("organizations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  type: orgTypeEnum("type").notNull(),
+  status: orgStatusEnum("status").notNull().default("pending"),
+  /** Set when the participant finishes the profile wizard. Null means they
+   * are still gated out of everything except onboarding. */
+  onboardingCompletedAt: timestamp("onboarding_completed_at", { withTimezone: true }),
+  phone: text("phone"),
+  country: text("country"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/**
+ * A user's permissions come from `isAdmin` plus their organization's `type` —
+ * the type is never duplicated onto the user, so the two can't drift apart.
+ * Admins have no organization.
+ */
+export const users = pgTable("users", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  name: text("name").notNull(),
+  isAdmin: boolean("is_admin").notNull().default(false),
+  organizationId: uuid("organization_id").references(() => organizations.id, {
+    onDelete: "cascade",
+  }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/* ------------------------------------------------------------------ */
+/*  Per-type profiles                                                  */
+/* ------------------------------------------------------------------ */
+
+export const brandProfiles = pgTable("brand_profiles", {
+  organizationId: uuid("organization_id")
+    .primaryKey()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  industry: text("industry"),
+  description: text("description"),
+  website: text("website"),
+  foundedYear: integer("founded_year"),
+  outletCount: integer("outlet_count"),
+  countriesPresent: text("countries_present").array(),
+  /** Informational only — there's no in-portal franchise matching; Connectors
+   * staff use this when introducing franchisees to a brand manually. */
+  isFranchising: boolean("is_franchising").notNull().default(false),
+  franchiseInvestmentMin: integer("franchise_investment_min"),
+  franchiseInvestmentMax: integer("franchise_investment_max"),
+  franchiseFee: integer("franchise_fee"),
+  royaltyPercent: integer("royalty_percent"),
+  spaceRequiredSqft: integer("space_required_sqft"),
+  currency: varchar("currency", { length: 3 }).notNull().default("GBP"),
+});
+
+export const franchiseeProfiles = pgTable("franchisee_profiles", {
+  organizationId: uuid("organization_id")
+    .primaryKey()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  budgetMin: integer("budget_min"),
+  budgetMax: integer("budget_max"),
+  currency: varchar("currency", { length: 3 }).notNull().default("GBP"),
+  preferredCities: text("preferred_cities").array(),
+  industriesInterested: text("industries_interested").array(),
+  experienceYears: integer("experience_years"),
+  hasExistingBusiness: boolean("has_existing_business").notNull().default(false),
+  notes: text("notes"),
+});
+
+/** Landlords and developers both list space, but a landlord fills a unit
+ * while a developer fills a scheme — different enough to warrant their own
+ * profile shape, while sharing the `properties` inventory table. */
+export const landlordProfiles = pgTable("landlord_profiles", {
+  organizationId: uuid("organization_id")
+    .primaryKey()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  cities: text("cities").array(),
+  portfolioSize: integer("portfolio_size"),
+  notes: text("notes"),
+});
+
+export const developerProfiles = pgTable("developer_profiles", {
+  organizationId: uuid("organization_id")
+    .primaryKey()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  projectName: text("project_name"),
+  projectType: text("project_type"),
+  city: text("city"),
+  totalUnits: integer("total_units"),
+  occupancyPercent: integer("occupancy_percent"),
+  openingDate: text("opening_date"),
+  notes: text("notes"),
+});
+
+export const investorProfiles = pgTable("investor_profiles", {
+  organizationId: uuid("organization_id")
+    .primaryKey()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  ticketMin: integer("ticket_min"),
+  ticketMax: integer("ticket_max"),
+  currency: varchar("currency", { length: 3 }).notNull().default("GBP"),
+  sectors: text("sectors").array(),
+  horizonMonths: integer("horizon_months"),
+  investmentTypes: text("investment_types").array(),
+  notes: text("notes"),
+});
+
+/* ------------------------------------------------------------------ */
+/*  Properties — listed by landlords/developers, browsable by brands   */
+/* ------------------------------------------------------------------ */
+
+export const propertyTypeEnum = pgEnum("property_type", [
+  "retail_shop",
+  "commercial_unit",
+  "food_court",
+  "standalone_building",
+  "kiosk",
+  "showroom",
+  "office",
+  "mixed_use",
+]);
+
+export const propertyStatusEnum = pgEnum("property_status", [
+  "available",
+  "under_offer",
+  "leased",
+  "withdrawn",
+]);
+
+export const properties = pgTable("properties", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: uuid("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  propertyType: propertyTypeEnum("property_type").notNull().default("retail_shop"),
+  city: text("city").notNull(),
+  country: text("country"),
+  area: text("area"),
+  /** Free-text formatted address for now. Reserved for a Google Places
+   * picker once there's an API key — latitude/longitude are already here so
+   * adding the picker later needs no migration, just a UI change. */
+  mapAddress: text("map_address"),
+  latitude: doublePrecision("latitude"),
+  longitude: doublePrecision("longitude"),
+  sizeSqft: integer("size_sqft"),
+  floorLevel: text("floor_level"),
+  parkingAvailable: boolean("parking_available").notNull().default(false),
+  rentAmount: integer("rent_amount"),
+  rentPeriod: text("rent_period").default("month"),
+  currency: varchar("currency", { length: 3 }).notNull().default("GBP"),
+  availableFrom: text("available_from"),
+  status: propertyStatusEnum("status").notNull().default("available"),
+  description: text("description"),
+  /** Paste-in links for now — same convention as `documents.url` — rather
+   * than a direct upload pipeline, which would need Vercel Blob wired in
+   * before this can ship. */
+  photos: text("photos").array(),
+  video: text("video"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/* ------------------------------------------------------------------ */
+/*  Requests — franchisee/investor demand, admin-reviewed only         */
+/* ------------------------------------------------------------------ */
+
+export const requestTypeEnum = pgEnum("request_type", ["space", "franchise", "investment"]);
+export const requestStatusEnum = pgEnum("request_status", [
+  "open",
+  "in_review",
+  "matched",
+  "closed",
+]);
+
+/**
+ * A franchisee or investor tells Connectors what they're looking for; nobody
+ * else in the portal ever sees this row. There's no matching workflow
+ * attached to it — Connectors staff follow up directly using the contact
+ * details on the organization, and update `status` here purely for their
+ * own tracking.
+ */
+export const requests = pgTable("requests", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: uuid("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  type: requestTypeEnum("type").notNull(),
+  title: text("title").notNull(),
+  cities: text("cities").array(),
+  industries: text("industries").array(),
+  budgetMin: integer("budget_min"),
+  budgetMax: integer("budget_max"),
+  currency: varchar("currency", { length: 3 }).notNull().default("GBP"),
+  sizeSqft: integer("size_sqft"),
+  notes: text("notes"),
+  status: requestStatusEnum("status").notNull().default("open"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/* ------------------------------------------------------------------ */
+/*  Documents & messages — org ↔ Connectors, not org ↔ org             */
+/* ------------------------------------------------------------------ */
+
+export const documentKindEnum = pgEnum("document_kind", ["document", "agreement"]);
+
+export const documents = pgTable("documents", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: uuid("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  url: text("url").notNull(),
+  kind: documentKindEnum("kind").notNull().default("document"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const messages = pgTable("messages", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: uuid("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  authorName: text("author_name").notNull(),
+  authorIsAdmin: boolean("author_is_admin").notNull(),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/* ------------------------------------------------------------------ */
+/*  Public enquiries — the top of the funnel                           */
+/* ------------------------------------------------------------------ */
+
+/** Matches orgTypeEnum minus "developer" — the four public enquiry forms,
+ * one per self-service audience the marketing site targets. */
+export const enquirySourceEnum = pgEnum("enquiry_source", [
+  "brand",
+  "franchisee",
+  "landlord",
+  "investor",
+]);
+
+export const enquiryStatusEnum = pgEnum("enquiry_status", ["new", "converted", "archived"]);
+
+/**
+ * Raw submissions from the four public forms. `payload` keeps the full
+ * validated form data as JSON rather than four near-duplicate tables mirroring
+ * each schema — the shapes differ enough (PKR range strings, per-audience
+ * fields) that forcing them into typed columns here would either lose
+ * precision or invent structure the source data doesn't have. `summary` is
+ * the same human-readable text the notification email already sends, reused
+ * rather than re-derived.
+ *
+ * Converting one into a real organization is an explicit admin action (see
+ * convertEnquiry) — nothing here creates a portal account on its own.
+ */
+export const enquiries = pgTable("enquiries", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  source: enquirySourceEnum("source").notNull(),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone"),
+  companyName: text("company_name"),
+  summary: text("summary").notNull(),
+  payload: jsonb("payload").notNull().$type<Record<string, unknown>>(),
+  status: enquiryStatusEnum("status").notNull().default("new"),
+  convertedOrgId: uuid("converted_org_id").references(() => organizations.id, {
+    onDelete: "set null",
+  }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type OrgType = (typeof orgTypeEnum.enumValues)[number];
+export type EnquirySource = (typeof enquirySourceEnum.enumValues)[number];

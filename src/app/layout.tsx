@@ -1,8 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Instrument_Sans } from "next/font/google";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
-import { SmoothScroll } from "@/components/SmoothScroll";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { SITE_URL, organizationLd, websiteLd } from "@/lib/seo";
 import { site } from "@/lib/site";
@@ -82,6 +79,12 @@ export const viewport: Viewport = {
   themeColor: "#ffffff",
 };
 
+/**
+ * Deliberately bare — just html/body, fonts and site-wide JSON-LD. The
+ * marketing chrome (Header, Footer, Lenis smooth-scroll) lives in
+ * `(marketing)/layout.tsx` instead, so `/portal/*` renders with none of it:
+ * a real dashboard, not a page with a corporate nav bar bolted on top.
+ */
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -89,17 +92,7 @@ export default function RootLayout({
     <html lang="en" className={`${instrumentSans.variable} ${geist.variable}`}>
       <body className="antialiased">
         <JsonLd data={[organizationLd(), websiteLd()]} />
-        <SmoothScroll>
-          <a
-            href="#main"
-            className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-violet-600 focus:px-5 focus:py-3 focus:text-sm focus:text-white"
-          >
-            Skip to content
-          </a>
-          <Header />
-          <main id="main">{children}</main>
-          <Footer />
-        </SmoothScroll>
+        {children}
       </body>
     </html>
   );

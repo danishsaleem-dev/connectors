@@ -2,6 +2,7 @@
 
 import { Resend } from "resend";
 import { site } from "@/lib/site";
+import { recordEnquiry } from "@/lib/actions/record-enquiry";
 import {
   landlordEnquirySchema,
   type LandlordEnquiryData,
@@ -67,6 +68,16 @@ export async function submitLandlordEnquiry(
     };
   }
   const data = parsed.data;
+
+  await recordEnquiry({
+    source: "landlord",
+    name: data.fullName,
+    email: data.email,
+    phone: data.mobile,
+    companyName: data.companyName,
+    summary: formatEnquiry(data),
+    payload: data,
+  });
 
   const uploads = [
     ...formData.getAll("propertyPhotos"),

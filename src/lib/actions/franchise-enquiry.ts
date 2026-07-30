@@ -2,6 +2,7 @@
 
 import { Resend } from "resend";
 import { site } from "@/lib/site";
+import { recordEnquiry } from "@/lib/actions/record-enquiry";
 import {
   franchiseEnquirySchema,
   type FranchiseEnquiryData,
@@ -65,6 +66,15 @@ export async function submitFranchiseEnquiry(
     };
   }
   const data = parsed.data;
+
+  await recordEnquiry({
+    source: "franchisee",
+    name: data.fullName,
+    email: data.email,
+    phone: data.mobile,
+    summary: formatEnquiry(data),
+    payload: data,
+  });
 
   const uploads = [formData.get("supportingDocument")].filter(
     (f): f is File => f instanceof File && f.size > 0,

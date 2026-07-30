@@ -1,0 +1,585 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { and, eq } from "drizzle-orm";
+import { Resend } from "resend";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { hashPassword } from "@/lib/auth/password";
+import { getDb } from "@/lib/db/client";
+import {
+  brandProfiles,
+  developerProfiles,
+  documents,
+  franchiseeProfiles,
+  investorProfiles,
+  landlordProfiles,
+  messages,
+  organizations,
+  properties,
+  requests,
+  users,
+  type OrgType,
+} from "@/lib/db/schema";
+import { site } from "@/lib/site";
+import { requireAdminUser, requireOrgUser } from "./guards";
+
+export type ActionState = {
+  ok: boolean;
+  error?: string;
+  /** Only set right after creating a user — the one time the temp password is
+   * visible, if there's no RESEND_API_KEY to email it instead. */
+  tempPassword?: string;
+};
+
+/* ------------------------------------------------------------------ */
+/*  Helpers                                                            */
+/* ------------------------------------------------------------------ */
+
+function str(formData: FormData, key: string) {
+  const value = String(formData.get(key) ?? "").trim();
+  return value.length ? value : null;
+}
+
+function num(formData: FormData, key: string) {
+  const raw = String(formData.get(key) ?? "").trim();
+  if (!raw) return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? Math.round(parsed) : null;
+}
+
+function bool(formData: FormData, key: string) {
+  return formData.get(key) != null;
+}
+
+/** Accepts either repeated checkbox entries or one comma/newline-separated
+ * string — the latter is how the property photo list is submitted. */
+function list(formData: FormData, key: string) {
+  const all = formData.getAll(key).map((v) => String(v).trim()).filter(Boolean);
+  if (all.length > 1) return all;
+  if (all.length === 1) {
+    return all[0]
+      .split(/[,\n]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+/** Revalidates everything under the portal in one call, so new pages don't
+ * each need a line here. */
+function revalidatePortal() {
+  revalidatePath("/portal", "layout");
+}
+
+function fail(scope: string, err: unknown, message: string): ActionState {
+  console.error(`[portal] ${scope} failed`, err);
+  return { ok: false, error: message };
+}
+
+function generateTempPassword() {
+  const bytes = crypto.getRandomValues(new Uint8Array(9));
+  return Array.from(bytes, (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 12);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Profiles & onboarding                                              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * One action for all five participant types: each profile table is keyed by
+ * organizationId and the form only submits fields relevant to its type, so
+ * branching happens once here rather than in five near-identical actions.
+ */
+async function writeProfile(type: OrgType, organizationId: string, formData: FormData) {
+  const db = getDb();
+  switch (type) {
+    case "brand":
+      await db
+        .update(brandProfiles)
+        .set({
+          industry: str(formData, "industry"),
+          description: str(formData, "description"),
+          website: str(formData, "website"),
+          foundedYear: num(formData, "foundedYear"),
+          outletCount: num(formData, "outletCount"),
+          countriesPresent: list(formData, "countriesPresent"),
+          isFranchising: bool(formData, "isFranchising"),
+          franchiseInvestmentMin: num(formData, "franchiseInvestmentMin"),
+          franchiseInvestmentMax: num(formData, "franchiseInvestmentMax"),
+          franchiseFee: num(formData, "franchiseFee"),
+          royaltyPercent: num(formData, "royaltyPercent"),
+          spaceRequiredSqft: num(formData, "spaceRequiredSqft"),
+        })
+        .where(eq(brandProfiles.organizationId, organizationId));
+      break;
+    case "franchisee":
+      await db
+        .update(franchiseeProfiles)
+        .set({
+          budgetMin: num(formData, "budgetMin"),
+          budgetMax: num(formData, "budgetMax"),
+          preferredCities: list(formData, "preferredCities"),
+          industriesInterested: list(formData, "industriesInterested"),
+          experienceYears: num(formData, "experienceYears"),
+          hasExistingBusiness: bool(formData, "hasExistingBusiness"),
+          notes: str(formData, "notes"),
+        })
+        .where(eq(franchiseeProfiles.organizationId, organizationId));
+      break;
+    case "landlord":
+      await db
+        .update(landlordProfiles)
+        .set({
+          cities: list(formData, "cities"),
+          portfolioSize: num(formData, "portfolioSize"),
+          notes: str(formData, "notes"),
+        })
+        .where(eq(landlordProfiles.organizationId, organizationId));
+      break;
+    case "developer":
+      await db
+        .update(developerProfiles)
+        .set({
+          projectName: str(formData, "projectName"),
+          projectType: str(formData, "projectType"),
+          city: str(formData, "city"),
+          totalUnits: num(formData, "totalUnits"),
+          occupancyPercent: num(formData, "occupancyPercent"),
+          openingDate: str(formData, "openingDate"),
+          notes: str(formData, "notes"),
+        })
+        .where(eq(developerProfiles.organizationId, organizationId));
+      break;
+    case "investor":
+      await db
+        .update(investorProfiles)
+        .set({
+          ticketMin: num(formData, "ticketMin"),
+          ticketMax: num(formData, "ticketMax"),
+          sectors: list(formData, "sectors"),
+          horizonMonths: num(formData, "horizonMonths"),
+          investmentTypes: list(formData, "investmentTypes"),
+          notes: str(formData, "notes"),
+        })
+        .where(eq(investorProfiles.organizationId, organizationId));
+      break;
+  }
+}
+
+export async function saveProfile(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const user = await requireOrgUser();
+    const db = getDb();
+    const [org] = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.id, user.organizationId))
+      .limit(1);
+    if (!org) return { ok: false, error: "Organization not found." };
+
+    const name = str(formData, "organizationName");
+    await db
+      .update(organizations)
+      .set({
+        ...(name ? { name } : {}),
+        phone: str(formData, "phone"),
+        country: str(formData, "country"),
+      })
+      .where(eq(organizations.id, org.id));
+
+    await writeProfile(org.type, org.id, formData);
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("saveProfile", err, "Couldn't save your profile.");
+  }
+}
+
+/** Same write as saveProfile, plus flipping the gate that unlocks the rest of
+ * the portal and moving the organization from pending to active. */
+export async function completeOnboarding(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const user = await requireOrgUser();
+    const db = getDb();
+    const [org] = await db
+      .select()
+      .from(organizations)
+      .where(eq(organizations.id, user.organizationId))
+      .limit(1);
+    if (!org) return { ok: false, error: "Organization not found." };
+
+    const name = str(formData, "organizationName");
+    await db
+      .update(organizations)
+      .set({
+        ...(name ? { name } : {}),
+        phone: str(formData, "phone"),
+        country: str(formData, "country"),
+        onboardingCompletedAt: new Date(),
+        status: "active",
+      })
+      .where(eq(organizations.id, org.id));
+
+    await writeProfile(org.type, org.id, formData);
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("completeOnboarding", err, "Couldn't complete onboarding.");
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Properties (landlord / developer listings, browsable by brands)    */
+/* ------------------------------------------------------------------ */
+
+export async function saveProperty(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return { ok: false, error: "Your session has expired — sign in again." };
+
+    const id = str(formData, "id");
+    // An admin may act on any organization's property; a participant only on
+    // their own, and the org id is taken from their session, never the form.
+    const organizationId = user.isAdmin
+      ? str(formData, "organizationId")
+      : user.organizationId;
+    if (!organizationId) return { ok: false, error: "No organization to attach this to." };
+
+    const title = str(formData, "title");
+    const city = str(formData, "city");
+    if (!title || !city) return { ok: false, error: "Enter a title and city." };
+
+    const values = {
+      organizationId,
+      title,
+      city,
+      country: str(formData, "country"),
+      propertyType: (str(formData, "propertyType") ??
+        "retail_shop") as (typeof properties.$inferInsert)["propertyType"],
+      area: str(formData, "area"),
+      mapAddress: str(formData, "mapAddress"),
+      sizeSqft: num(formData, "sizeSqft"),
+      floorLevel: str(formData, "floorLevel"),
+      parkingAvailable: bool(formData, "parkingAvailable"),
+      rentAmount: num(formData, "rentAmount"),
+      rentPeriod: str(formData, "rentPeriod") ?? "month",
+      availableFrom: str(formData, "availableFrom"),
+      status: (str(formData, "status") ??
+        "available") as (typeof properties.$inferInsert)["status"],
+      description: str(formData, "description"),
+      photos: list(formData, "photos"),
+      video: str(formData, "video"),
+    };
+
+    const db = getDb();
+    if (id) {
+      await db
+        .update(properties)
+        .set(values)
+        .where(
+          user.isAdmin
+            ? eq(properties.id, id)
+            : and(eq(properties.id, id), eq(properties.organizationId, organizationId)),
+        );
+    } else {
+      await db.insert(properties).values(values);
+    }
+
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("saveProperty", err, "Couldn't save that property.");
+  }
+}
+
+export async function deleteProperty(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return { ok: false, error: "Your session has expired — sign in again." };
+    const id = str(formData, "id");
+    if (!id) return { ok: false, error: "Missing property." };
+    if (!user.isAdmin && !user.organizationId) {
+      return { ok: false, error: "No organization on your account." };
+    }
+
+    await getDb()
+      .delete(properties)
+      .where(
+        user.isAdmin
+          ? eq(properties.id, id)
+          : and(
+              eq(properties.id, id),
+              eq(properties.organizationId, user.organizationId as string),
+            ),
+      );
+
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("deleteProperty", err, "Couldn't remove that property.");
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Requests — franchisee/investor demand, admin-reviewed only         */
+/* ------------------------------------------------------------------ */
+
+export async function createRequest(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const user = await requireOrgUser();
+    const title = str(formData, "title");
+    const type = str(formData, "type");
+    if (!title) return { ok: false, error: "Give your request a title." };
+    if (!type || !["space", "franchise", "investment"].includes(type)) {
+      return { ok: false, error: "Choose a request type." };
+    }
+
+    await getDb()
+      .insert(requests)
+      .values({
+        organizationId: user.organizationId,
+        type: type as (typeof requests.$inferInsert)["type"],
+        title,
+        cities: list(formData, "cities"),
+        industries: list(formData, "industries"),
+        budgetMin: num(formData, "budgetMin"),
+        budgetMax: num(formData, "budgetMax"),
+        sizeSqft: num(formData, "sizeSqft"),
+        notes: str(formData, "notes"),
+      });
+
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("createRequest", err, "Couldn't submit that request.");
+  }
+}
+
+export async function setRequestStatus(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdminUser();
+    const id = str(formData, "id");
+    const status = str(formData, "status");
+    if (!id || !status) return { ok: false, error: "Missing request or status." };
+
+    await getDb()
+      .update(requests)
+      .set({ status: status as (typeof requests.$inferInsert)["status"] })
+      .where(eq(requests.id, id));
+
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("setRequestStatus", err, "Couldn't update that request.");
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Admin: organizations, accounts, org-level documents & messages     */
+/* ------------------------------------------------------------------ */
+
+export async function createOrganization(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdminUser();
+    const name = str(formData, "name");
+    const type = str(formData, "type") as OrgType | null;
+    if (!name) return { ok: false, error: "Enter an organization name." };
+    if (!type || !["brand", "franchisee", "landlord", "developer", "investor"].includes(type)) {
+      return { ok: false, error: "Choose an organization type." };
+    }
+
+    const db = getDb();
+    const [org] = await db
+      .insert(organizations)
+      .values({ name, type, status: "active" })
+      .returning();
+
+    // Mirrors registration: give every organization its profile row up front
+    // so later edits are always an update.
+    switch (type) {
+      case "brand":
+        await db.insert(brandProfiles).values({ organizationId: org.id });
+        break;
+      case "franchisee":
+        await db.insert(franchiseeProfiles).values({ organizationId: org.id });
+        break;
+      case "landlord":
+        await db.insert(landlordProfiles).values({ organizationId: org.id });
+        break;
+      case "developer":
+        await db.insert(developerProfiles).values({ organizationId: org.id });
+        break;
+      case "investor":
+        await db.insert(investorProfiles).values({ organizationId: org.id });
+        break;
+    }
+
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("createOrganization", err, "Couldn't create the organization.");
+  }
+}
+
+export async function updateOrganization(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdminUser();
+    const id = str(formData, "id");
+    if (!id) return { ok: false, error: "Missing organization." };
+
+    const db = getDb();
+    const [org] = await db.select().from(organizations).where(eq(organizations.id, id)).limit(1);
+    if (!org) return { ok: false, error: "Organization not found." };
+
+    const name = str(formData, "name");
+    await db
+      .update(organizations)
+      .set({
+        ...(name ? { name } : {}),
+        status: (str(formData, "status") ??
+          org.status) as (typeof organizations.$inferInsert)["status"],
+        phone: str(formData, "phone"),
+        country: str(formData, "country"),
+      })
+      .where(eq(organizations.id, id));
+
+    await writeProfile(org.type, id, formData);
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("updateOrganization", err, "Couldn't save those changes.");
+  }
+}
+
+export async function createPortalUser(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdminUser();
+
+    const email = String(formData.get("email") ?? "").trim().toLowerCase();
+    const name = str(formData, "name");
+    const isAdmin = bool(formData, "isAdmin");
+    const organizationId = str(formData, "organizationId");
+
+    if (!email || !name) return { ok: false, error: "Enter a name and email." };
+    if (!isAdmin && !organizationId) {
+      return { ok: false, error: "Non-admin accounts need an organization." };
+    }
+
+    const tempPassword = generateTempPassword();
+    const passwordHash = await hashPassword(tempPassword);
+
+    await getDb().insert(users).values({
+      email,
+      name,
+      isAdmin,
+      organizationId: isAdmin ? null : organizationId,
+      passwordHash,
+    });
+
+    if (process.env.RESEND_API_KEY) {
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      await resend.emails.send({
+        from: process.env.CONTACT_FROM_EMAIL ?? "Connectors Portal <onboarding@resend.dev>",
+        to: email,
+        subject: "Your Connectors portal access",
+        text: `Hi ${name},\n\nYou've been given access to the Connectors partner portal.\n\nEmail: ${email}\nTemporary password: ${tempPassword}\n\nSign in at ${site.name} / Portal and change your password once you're in.`,
+      });
+      revalidatePortal();
+      return { ok: true };
+    }
+
+    revalidatePortal();
+    return { ok: true, tempPassword };
+  } catch (err) {
+    return fail(
+      "createPortalUser",
+      err,
+      "Couldn't create that account — check the email isn't already in use.",
+    );
+  }
+}
+
+export async function createDocument(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdminUser();
+    const organizationId = str(formData, "organizationId");
+    const title = str(formData, "title");
+    const url = str(formData, "url");
+    if (!organizationId || !title || !url) {
+      return { ok: false, error: "Fill in the title and link." };
+    }
+
+    await getDb().insert(documents).values({
+      organizationId,
+      title,
+      url,
+      kind: (str(formData, "kind") ?? "document") as (typeof documents.$inferInsert)["kind"],
+    });
+
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("createDocument", err, "Couldn't add that document.");
+  }
+}
+
+/** The general organization ↔ Connectors thread. There is no org ↔ org
+ * thread anywhere in the portal — every conversation has Connectors on one
+ * side of it. */
+export async function postMessage(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return { ok: false, error: "Your session has expired — sign in again." };
+
+    const body = str(formData, "body");
+    if (!body || body.length < 2) return { ok: false, error: "Write a message first." };
+
+    const organizationId = user.isAdmin ? str(formData, "organizationId") : user.organizationId;
+    if (!organizationId) return { ok: false, error: "No organization to post to." };
+
+    await getDb().insert(messages).values({
+      organizationId,
+      authorName: user.isAdmin ? "Connectors" : user.name,
+      authorIsAdmin: user.isAdmin,
+      body,
+    });
+
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("postMessage", err, "Couldn't send that message.");
+  }
+}

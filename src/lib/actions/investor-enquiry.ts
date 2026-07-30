@@ -2,6 +2,7 @@
 
 import { Resend } from "resend";
 import { site } from "@/lib/site";
+import { recordEnquiry } from "@/lib/actions/record-enquiry";
 import {
   investorEnquirySchema,
   type InvestorEnquiryData,
@@ -63,6 +64,16 @@ export async function submitInvestorEnquiry(
     };
   }
   const data = parsed.data;
+
+  await recordEnquiry({
+    source: "investor",
+    name: data.fullName,
+    email: data.email,
+    phone: data.mobile,
+    companyName: data.companyOrFund,
+    summary: formatEnquiry(data),
+    payload: data,
+  });
 
   const uploads = [formData.get("investmentProfile")].filter(
     (f): f is File => f instanceof File && f.size > 0,

@@ -2,6 +2,7 @@
 
 import { Resend } from "resend";
 import { site } from "@/lib/site";
+import { recordEnquiry } from "@/lib/actions/record-enquiry";
 import { brandEnquirySchema, type BrandEnquiryData } from "@/lib/schemas/brand-enquiry";
 
 export type BrandEnquiryState = {
@@ -92,6 +93,16 @@ export async function submitBrandEnquiry(
     };
   }
   const data = parsed.data;
+
+  await recordEnquiry({
+    source: "brand",
+    name: data.contactName,
+    email: data.email,
+    phone: data.mobile,
+    companyName: data.companyName,
+    summary: formatEnquiry(data),
+    payload: data,
+  });
 
   const uploads = [
     formData.get("companyProfile"),
