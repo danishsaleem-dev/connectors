@@ -1,6 +1,7 @@
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { SmoothScroll } from "@/components/SmoothScroll";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 
 export default function MarketingLayout({
   children,
@@ -18,6 +19,9 @@ export default function MarketingLayout({
       <Header />
       <main id="main">{children}</main>
       <Footer />
+      {/* Marketing only — the portal has a support route and shouldn't carry a
+          visitor-facing help widget over its own UI. */}
+      <ChatWidget />
     </SmoothScroll>
   );
 }
