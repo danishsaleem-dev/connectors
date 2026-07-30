@@ -285,6 +285,8 @@ export const enquiryStatusEnum = pgEnum("enquiry_status", ["new", "converted", "
  * Converting one into a real organization is an explicit admin action (see
  * convertEnquiry) — nothing here creates a portal account on its own.
  */
+export type ChatTranscript = { role: "user" | "assistant"; text: string }[];
+
 export const enquiries = pgTable("enquiries", {
   id: uuid("id").defaultRandom().primaryKey(),
   source: enquirySourceEnum("source").notNull(),
@@ -294,6 +296,14 @@ export const enquiries = pgTable("enquiries", {
   companyName: text("company_name"),
   summary: text("summary").notNull(),
   payload: jsonb("payload").notNull().$type<Record<string, unknown>>(),
+  /**
+   * The conversation that produced a lead captured by the site assistant, so an
+   * admin can read what the visitor actually asked before replying. Null for
+   * form submissions — its presence is what distinguishes a chat lead from a
+   * form lead, which is why there's no separate channel column saying the same
+   * thing a second time.
+   */
+  transcript: jsonb("transcript").$type<ChatTranscript>(),
   status: enquiryStatusEnum("status").notNull().default("new"),
   convertedOrgId: uuid("converted_org_id").references(() => organizations.id, {
     onDelete: "set null",

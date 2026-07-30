@@ -46,13 +46,16 @@ export default async function AdminEnquiriesPage() {
               title={enquiry.companyName || enquiry.name}
               meta={`${orgTypeMeta(enquiry.source).singular} · ${enquiry.email} · ${enquiry.createdAt.toLocaleDateString()}`}
               trailing={
-                <Pill tone={STATUS_TONE[enquiry.status]}>
-                  {enquiry.status === "new"
-                    ? "New"
-                    : enquiry.status === "converted"
-                      ? "Converted"
-                      : "Archived"}
-                </Pill>
+                <div className="flex items-center gap-2">
+                  {enquiry.transcript && <Pill tone="violet">Chat</Pill>}
+                  <Pill tone={STATUS_TONE[enquiry.status]}>
+                    {enquiry.status === "new"
+                      ? "New"
+                      : enquiry.status === "converted"
+                        ? "Converted"
+                        : "Archived"}
+                  </Pill>
+                </div>
               }
             />
           ))}

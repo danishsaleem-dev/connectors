@@ -1,3 +1,4 @@
+import type { EnquirySource } from "@/lib/db/schema";
 import { industries, mission, process } from "@/lib/content/company";
 import { divisions } from "@/lib/content/divisions";
 import { offices, site } from "@/lib/site";
@@ -25,6 +26,14 @@ export type KnowledgeEntry = {
   keywords: string[];
   /** Optional deep link offered alongside the answer. */
   link?: { href: string; label: string };
+  /**
+   * What asking this reveals about the visitor. Used to pre-select the "I am a…"
+   * field on the lead form — the visitor can still change it, so this only ever
+   * saves them a click, it never decides the answer on their behalf.
+   *
+   * Type-only import: nothing from the database reaches the browser bundle.
+   */
+  leadSource?: EnquirySource;
 };
 
 const cityList = offices.map((o) => o.address.locality).join(", ");
@@ -146,6 +155,7 @@ export const knowledge: KnowledgeEntry[] = [
       "rollout",
     ],
     link: { href: "/for-brands", label: "For brands" },
+    leadSource: "brand",
   },
   {
     id: "for-franchise",
@@ -163,6 +173,7 @@ export const knowledge: KnowledgeEntry[] = [
       "run a franchise",
     ],
     link: { href: "/for-franchise", label: "For franchisees" },
+    leadSource: "franchisee",
   },
   {
     id: "for-landlords",
@@ -182,6 +193,7 @@ export const knowledge: KnowledgeEntry[] = [
       "my building",
     ],
     link: { href: "/for-landlords", label: "For landlords" },
+    leadSource: "landlord",
   },
   {
     id: "for-investors",
@@ -201,6 +213,7 @@ export const knowledge: KnowledgeEntry[] = [
       "portfolio",
     ],
     link: { href: "/for-investors", label: "For investors" },
+    leadSource: "investor",
   },
   {
     id: "malls",
@@ -219,7 +232,10 @@ export const knowledge: KnowledgeEntry[] = [
       "retail mix",
       "my project",
     ],
+    // A mall or project owner is offering space, so they enter the pipeline the
+    // same way a landlord does — there's no separate developer enquiry source.
     link: { href: "/services/mall-projects", label: "Mall & project support" },
+    leadSource: "landlord",
   },
 
   /* ---------------------------------------------------------------- */
@@ -240,6 +256,7 @@ export const knowledge: KnowledgeEntry[] = [
       "scale my business",
     ],
     link: { href: "/services/franchise-development", label: "Franchise development" },
+    leadSource: "brand",
   },
   {
     id: "franchise-matching",
@@ -358,6 +375,7 @@ export const knowledge: KnowledgeEntry[] = [
       "just started",
     ],
     link: { href: "/for-brands", label: "For brands" },
+    leadSource: "brand",
   },
   {
     id: "portal",

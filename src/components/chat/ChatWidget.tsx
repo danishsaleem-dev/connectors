@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useActionState, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { clsx } from "clsx";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { ArrowUp, MessageSquare, X } from "lucide-react";
+import { ArrowUp, Check, Mail, Phone, Sparkles, X } from "lucide-react";
 import { OrbitField } from "@/components/OrbitField";
 import {
   GREETING,
@@ -13,6 +13,8 @@ import {
   type KnowledgeEntry,
 } from "@/lib/chat/knowledge";
 import { entryById, matchQuestion } from "@/lib/chat/match";
+import { submitChatLead } from "@/lib/chat/lead";
+import type { EnquirySource } from "@/lib/db/schema";
 import { site } from "@/lib/site";
 
 /**
@@ -33,8 +35,6 @@ type Message = {
   role: "user" | "assistant";
   text: string;
   link?: KnowledgeEntry["link"];
-  /** Renders the contact card under the message. */
-  handoff?: boolean;
 };
 
 const STORAGE_KEY = "connectors_chat_v1";
@@ -44,10 +44,7 @@ const MISS_LIMIT = 2;
 let seq = 0;
 const nextId = () => `m${++seq}_${Date.now().toString(36)}`;
 
-function assistantMessage(
-  text: string,
-  extra?: Pick<Message, "link" | "handoff">,
-): Message {
+function assistantMessage(text: string, extra?: Pick<Message, "link">): Message {
   return { id: nextId(), role: "assistant", text, ...extra };
 }
 
@@ -76,6 +73,14 @@ export function ChatWidget() {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
+  /** Shown once a human is warranted — by an escalation, by two misses, or
+   * because the visitor asked for one. Never shown unprompted: a contact form
+   * that opens on arrival is a popup, not an offer of help. */
+  const [leadOpen, setLeadOpen] = useState(false);
+  const [leadDone, setLeadDone] = useState(false);
+  /** What the conversation suggests they are, used only to pre-select the
+   * form's dropdown. Last relevant question wins. */
+  const [leadSource, setLeadSource] = useState<EnquirySource | null>(null);
   /** A ref, not state: nothing renders from it, and driving it through a
    * setState updater would risk appending the same message twice. */
   const misses = useRef(0);
@@ -131,6 +136,9 @@ export function ChatWidget() {
 
       if (result.kind === "answer") {
         misses.current = 0;
+        // Remember what this reveals about them, so if they do leave details
+        // the form is already pointing at the right team.
+        if (result.entry.leadSource) setLeadSource(result.entry.leadSource);
         setMessages((m) => [
           ...m,
           assistantMessage(result.entry.answer, { link: result.entry.link }),
@@ -145,20 +153,19 @@ export function ChatWidget() {
 
       if (result.kind === "escalate") {
         misses.current = 0;
-        setMessages((m) => [
-          ...m,
-          assistantMessage(result.answer, { handoff: true }),
-        ]);
+        setLeadOpen(true);
+        setMessages((m) => [...m, assistantMessage(result.answer)]);
         return;
       }
 
       // Unknown. First miss nudges toward the answerable set; a second gives up
       // and hands over rather than looping the visitor.
       misses.current += 1;
+      if (misses.current >= MISS_LIMIT) setLeadOpen(true);
       setMessages((m) => [
         ...m,
         misses.current >= MISS_LIMIT
-          ? assistantMessage(HANDOFF, { handoff: true })
+          ? assistantMessage(HANDOFF)
           : assistantMessage(
               "I don't have an answer for that one. Try one of the questions below, or ask about our services, industries or offices — and I can put you through to a representative any time.",
             ),
@@ -180,6 +187,10 @@ export function ChatWidget() {
   function reset() {
     setMessages([assistantMessage(GREETING)]);
     misses.current = 0;
+    setLeadOpen(false);
+    setLeadSource(null);
+    // leadDone deliberately survives: someone who already gave us their details
+    // shouldn't be asked for them again just because they cleared the chat.
     try {
       sessionStorage.removeItem(STORAGE_KEY);
     } catch {
@@ -196,34 +207,63 @@ export function ChatWidget() {
   const remainingSuggestions = suggestions.filter(
     (s) => !asked.has(s.question.toLowerCase()),
   );
+  /** Nothing but the greeting yet, so the launcher still has something to say. */
+  const idle = !open && messages.length <= 1;
 
   return (
     <>
-      {/* Launcher */}
-      <motion.button
-        ref={triggerRef}
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        aria-controls="connectors-chat-panel"
-        aria-label={open ? "Close help" : "Open help"}
-        initial={false}
-        whileHover={reduceMotion ? undefined : { scale: 1.04 }}
-        whileTap={reduceMotion ? undefined : { scale: 0.96 }}
-        className={clsx(
-          "fixed bottom-5 right-5 z-[60] flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-ink text-white shadow-[0_18px_40px_-16px_rgba(20,20,26,0.6)] ring-1 ring-white/10 transition-colors hover:bg-violet-600 md:bottom-7 md:right-7",
-          open && "bg-violet-600",
+      {/* Launcher. Idle = closed and not yet used, which is the only time it
+          asks for attention; once there's a conversation the halo stops. */}
+      <div className="fixed bottom-5 right-5 z-[60] md:bottom-7 md:right-7">
+        {idle && !reduceMotion && (
+          <>
+            <span className="pointer-events-none absolute inset-0 animate-ping rounded-full bg-violet-600/25 [animation-duration:2.8s]" />
+            <span className="pointer-events-none absolute -inset-2 rounded-full bg-violet-600/10 blur-lg" />
+          </>
         )}
-      >
-        <OrbitField
-          count={14}
-          strokeWidth={0.4}
-          className="pointer-events-none absolute inset-0 h-full w-full text-white/20"
-        />
-        <span className="relative">
-          {open ? <X size={20} /> : <MessageSquare size={20} />}
-        </span>
-      </motion.button>
+
+        <motion.button
+          ref={triggerRef}
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          aria-controls="connectors-chat-panel"
+          aria-label={open ? "Close help" : "Open help"}
+          initial={false}
+          whileHover={reduceMotion ? undefined : { scale: 1.03 }}
+          whileTap={reduceMotion ? undefined : { scale: 0.97 }}
+          className={clsx(
+            "group relative flex h-16 items-center overflow-hidden rounded-full text-white ring-1 ring-white/15",
+            "bg-gradient-to-br from-violet-700 via-violet-900 to-ink",
+            "shadow-[0_18px_45px_-12px_rgba(75,46,131,0.75)]",
+          )}
+        >
+          <OrbitField
+            count={16}
+            strokeWidth={0.4}
+            className="animate-orbit pointer-events-none absolute -right-4 top-1/2 h-20 w-20 -translate-y-1/2 text-white/15"
+          />
+
+          {/* Sparkles is the near-universal "assistant" glyph now, so it reads
+              as one instantly. The copy still says what this actually is —
+              the icon sets the expectation of help, not of a language model. */}
+          <span className="relative flex h-16 w-16 shrink-0 items-center justify-center">
+            {open ? <X size={21} /> : <Sparkles size={22} strokeWidth={1.9} />}
+          </span>
+
+          {/* Label unfurls on hover. Width-based rather than mounted on hover so
+              nothing reflows the page, and it stays out of the way on mobile
+              where there is no hover and the screen is narrow. */}
+          <span
+            className={clsx(
+              "relative hidden max-w-0 overflow-hidden whitespace-nowrap text-sm font-medium tracking-tight opacity-0 transition-all duration-300 ease-[var(--ease-out-expo)] sm:block",
+              !open && "group-hover:max-w-[11rem] group-hover:pr-6 group-hover:opacity-100",
+            )}
+          >
+            Ask a question
+          </span>
+        </motion.button>
+      </div>
 
       <AnimatePresence>
         {open && (
@@ -237,7 +277,7 @@ export function ChatWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 12, scale: 0.98 }}
             transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-x-0 bottom-0 z-[59] flex h-[85vh] flex-col overflow-hidden rounded-t-3xl border border-[var(--border)] bg-[var(--surface)] shadow-[0_-20px_60px_-20px_rgba(20,20,26,0.35)] sm:inset-x-auto sm:bottom-24 sm:right-5 sm:h-[min(34rem,calc(100vh-9rem))] sm:w-[24rem] sm:rounded-3xl md:right-7"
+            className="fixed inset-x-0 bottom-0 z-[59] flex h-[85vh] flex-col overflow-hidden rounded-t-3xl border border-[var(--border)] bg-[var(--surface)] shadow-[0_-20px_60px_-20px_rgba(20,20,26,0.35)] sm:inset-x-auto sm:bottom-28 sm:right-5 sm:h-[min(34rem,calc(100vh-10rem))] sm:w-[24rem] sm:rounded-3xl md:right-7"
           >
             {/* Header */}
             <div className="relative shrink-0 overflow-hidden bg-ink px-5 py-4 text-white">
@@ -247,29 +287,60 @@ export function ChatWidget() {
                 className="animate-orbit pointer-events-none absolute -right-16 top-1/2 h-40 w-40 -translate-y-1/2 text-white/[0.09]"
               />
               <div className="relative flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-display text-sm uppercase tracking-[0.16em]">
-                    Connectors
-                  </p>
-                  <p className="mt-0.5 text-xs text-white/55">
-                    Quick answers · a real person if you need one
-                  </p>
+                <div className="flex items-start gap-2.5">
+                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/15">
+                    <Sparkles size={14} strokeWidth={2} />
+                  </span>
+                  <div>
+                    <p className="font-display text-sm uppercase tracking-[0.16em]">
+                      Connectors
+                    </p>
+                    <p className="mt-0.5 text-xs text-white/55">
+                      Quick answers · a real person if you need one
+                    </p>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  aria-label="Close help"
-                  className="-mr-1 -mt-1 rounded-full p-1.5 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
-                >
-                  <X size={16} />
-                </button>
+
+                <div className="-mr-1 -mt-1 flex items-center gap-0.5">
+                  {/* Call and email sit here rather than only inside a handoff
+                      card, so someone who'd simply rather talk never has to
+                      work through the assistant to find the way out. */}
+                  <a
+                    href={`tel:${site.primaryOffice.phone.href}`}
+                    aria-label={`Call us on ${site.primaryOffice.phone.display}`}
+                    title={site.primaryOffice.phone.display}
+                    className="rounded-full p-1.5 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+                  >
+                    <Phone size={15} />
+                  </a>
+                  <a
+                    href={`mailto:${site.email.general}`}
+                    aria-label={`Email us at ${site.email.general}`}
+                    title={site.email.general}
+                    className="rounded-full p-1.5 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+                  >
+                    <Mail size={15} />
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setOpen(false)}
+                    aria-label="Close help"
+                    className="rounded-full p-1.5 text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Transcript */}
+            {/* Transcript.
+                data-lenis-prevent is load-bearing: Lenis drives the document
+                scroller and swallows wheel events site-wide, which leaves a
+                nested scroller like this one unable to scroll at all. */}
             <div
               ref={scrollRef}
-              className="no-scrollbar flex-1 space-y-3 overflow-y-auto bg-[var(--surface-sunken)] px-4 py-4"
+              data-lenis-prevent
+              className="slim-scrollbar flex-1 space-y-3 overflow-y-auto overscroll-contain bg-[var(--surface-sunken)] px-4 py-4"
             >
               <div aria-live="polite" className="space-y-3">
                 {messages.map((m) => (
@@ -289,7 +360,7 @@ export function ChatWidget() {
                 </div>
               )}
 
-              {!thinking && remainingSuggestions.length > 0 && (
+              {!thinking && !leadOpen && remainingSuggestions.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {remainingSuggestions.slice(0, 4).map((s) => (
                     <button
@@ -301,6 +372,25 @@ export function ChatWidget() {
                       {s.question}
                     </button>
                   ))}
+                </div>
+              )}
+
+              {leadOpen && !leadDone && (
+                <LeadForm
+                  defaultSource={leadSource}
+                  messages={messages}
+                  onDone={() => setLeadDone(true)}
+                  onDismiss={() => setLeadOpen(false)}
+                />
+              )}
+
+              {leadDone && (
+                <div className="flex items-start gap-2.5 rounded-2xl border border-violet-600/20 bg-violet-50 p-4">
+                  <Check size={16} className="mt-0.5 shrink-0 text-violet-600" />
+                  <p className="text-sm leading-relaxed text-violet-900">
+                    Thanks — we have your details and one of our representatives
+                    will be in touch. You can keep asking questions here meanwhile.
+                  </p>
                 </div>
               )}
             </div>
@@ -332,10 +422,22 @@ export function ChatWidget() {
                   <ArrowUp size={17} />
                 </button>
               </div>
-              <div className="mt-2 flex items-center justify-between px-1">
-                <p className="text-[10px] text-[var(--muted)]">
-                  Answers common questions only
-                </p>
+              <div className="mt-2 flex items-center justify-between gap-3 px-1">
+                {/* Always available, so someone ready to talk doesn't have to
+                    fail a question first to find the way through to a person. */}
+                {leadDone ? (
+                  <p className="text-[10px] text-[var(--muted)]">
+                    Answers common questions only
+                  </p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setLeadOpen(true)}
+                    className="text-[10px] font-medium text-violet-600 underline underline-offset-2 transition-colors hover:text-violet-700"
+                  >
+                    Talk to a representative
+                  </button>
+                )}
                 {messages.length > 1 && (
                   <button
                     type="button"
@@ -351,6 +453,154 @@ export function ChatWidget() {
         )}
       </AnimatePresence>
     </>
+  );
+}
+
+const SOURCE_OPTIONS: { value: EnquirySource; label: string }[] = [
+  { value: "brand", label: "A brand looking to expand" },
+  { value: "franchisee", label: "Looking to buy a franchise" },
+  { value: "landlord", label: "A landlord / property owner" },
+  { value: "investor", label: "An investor" },
+];
+
+const leadFieldClass =
+  "w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm outline-none transition-colors placeholder:text-[var(--muted)]/60 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20";
+
+/**
+ * The only part of the widget that talks to the server. Kept deliberately short
+ * — a visitor mid-conversation will abandon a long form, and everything else we
+ * might ask can be asked by the representative who calls them back.
+ */
+function LeadForm({
+  defaultSource,
+  messages,
+  onDone,
+  onDismiss,
+}: {
+  defaultSource: EnquirySource | null;
+  messages: Message[];
+  onDone: () => void;
+  onDismiss: () => void;
+}) {
+  const [state, formAction, pending] = useActionState(submitChatLead, null);
+
+  useEffect(() => {
+    if (state?.ok) onDone();
+  }, [state?.ok, onDone]);
+
+  // Sent as one hidden field rather than a structured body, because this posts
+  // through a plain server action alongside the rest of the form.
+  const transcript = JSON.stringify(
+    messages.map((m) => ({ role: m.role, text: m.text })),
+  );
+
+  return (
+    <form
+      action={formAction}
+      className="space-y-2.5 rounded-2xl border border-violet-600/20 bg-violet-50 p-4"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-violet-600">
+            Talk to a representative
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-violet-900/80">
+            Leave your details and we&rsquo;ll come back to you.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label="Dismiss"
+          className="-mr-1 -mt-1 rounded-full p-1 text-violet-900/40 transition-colors hover:bg-violet-600/10 hover:text-violet-900"
+        >
+          <X size={14} />
+        </button>
+      </div>
+
+      {/* Honeypot — real visitors never see or fill this. */}
+      <input
+        type="text"
+        name="company_website"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        className="hidden"
+      />
+      <input type="hidden" name="transcript" value={transcript} />
+
+      <input name="name" required placeholder="Your name" aria-label="Your name" className={leadFieldClass} />
+      <input
+        name="email"
+        type="email"
+        required
+        placeholder="Email address"
+        aria-label="Email address"
+        className={leadFieldClass}
+      />
+      <input
+        name="phone"
+        type="tel"
+        placeholder="Phone (optional)"
+        aria-label="Phone number"
+        className={leadFieldClass}
+      />
+      <select
+        name="source"
+        required
+        aria-label="Which describes you"
+        defaultValue={defaultSource ?? ""}
+        className={leadFieldClass}
+      >
+        <option value="" disabled>
+          Which describes you?
+        </option>
+        {SOURCE_OPTIONS.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <textarea
+        name="note"
+        rows={2}
+        placeholder="Anything else? (optional)"
+        aria-label="Anything else"
+        className={clsx(leadFieldClass, "resize-none")}
+      />
+
+      {state?.error && (
+        <p role="alert" className="text-xs text-red-600">
+          {state.error}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        disabled={pending}
+        className="w-full rounded-full bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-violet-700 disabled:opacity-60"
+      >
+        {pending ? "Sending…" : "Send my details"}
+      </button>
+
+      <div className="flex items-center justify-center gap-3 pt-0.5 text-[11px] text-violet-900/60">
+        <a
+          href={`tel:${site.primaryOffice.phone.href}`}
+          className="flex items-center gap-1.5 transition-colors hover:text-violet-700"
+        >
+          <Phone size={12} /> Call us
+        </a>
+        <span aria-hidden="true" className="text-violet-900/25">
+          ·
+        </span>
+        <a
+          href={`mailto:${site.email.general}`}
+          className="flex items-center gap-1.5 transition-colors hover:text-violet-700"
+        >
+          <Mail size={12} /> Email us
+        </a>
+      </div>
+    </form>
   );
 }
 
@@ -380,40 +630,14 @@ function Bubble({ message }: { message: Message }) {
           </Link>
         )}
 
-        {message.handoff && <HandoffCard />}
       </div>
     </div>
   );
 }
 
-/** The escape hatch. Deliberately concrete — a phone number and an email beat
- * a promise that someone will be in touch. */
-function HandoffCard() {
-  return (
-    <div className="mt-2 rounded-2xl border border-violet-600/20 bg-violet-50 p-3.5">
-      <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-violet-600">
-        Talk to a representative
-      </p>
-      <div className="mt-2.5 flex flex-col gap-1.5">
-        <Link
-          href="/contact"
-          className="text-sm font-medium text-violet-700 underline underline-offset-4"
-        >
-          Send us a message →
-        </Link>
-        <a
-          href={`mailto:${site.email.general}`}
-          className="text-xs text-violet-700/80 underline underline-offset-4"
-        >
-          {site.email.general}
-        </a>
-        <a
-          href={`tel:${site.primaryOffice.phone.href}`}
-          className="text-xs text-violet-700/80 underline underline-offset-4"
-        >
-          {site.primaryOffice.phone.display}
-        </a>
-      </div>
-    </div>
-  );
-}
+/**
+ * There is deliberately no per-message contact card. Every path that used to
+ * render one now opens the lead form instead, which carries the same call and
+ * email options — and the panel header carries them at all times. Three copies
+ * of the same phone number stacked on top of each other helped nobody.
+ */

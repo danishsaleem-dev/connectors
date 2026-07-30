@@ -173,6 +173,27 @@ html.lenis body {
   display: none;
 }
 
+/* Slim scrollbar for panels that scroll inside the page. Unlike .no-scrollbar
+   this stays visible on purpose — inside a small panel the scrollbar is the
+   only clue that there's more above or below. */
+.slim-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-grey-300) transparent;
+}
+.slim-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.slim-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.slim-scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--color-grey-300);
+  border-radius: 999px;
+}
+.slim-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: var(--color-violet-400);
+}
+
 /* Standard page gutter, used by every section wrapper. */
 .shell {
   width: 100%;

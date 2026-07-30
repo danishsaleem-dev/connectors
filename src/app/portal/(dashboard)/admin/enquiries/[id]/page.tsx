@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { clsx } from "clsx";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth/current-user";
 import { getDb } from "@/lib/db/client";
@@ -32,7 +33,7 @@ export default async function AdminEnquiryDetailPage({
     <div>
       <PortalHeader
         title={enquiry.companyName || enquiry.name}
-        subtitle={`${meta.singular} enquiry · submitted ${enquiry.createdAt.toLocaleString()}`}
+        subtitle={`${meta.singular} enquiry · ${enquiry.transcript ? "captured by the site assistant" : "from the public form"} · ${enquiry.createdAt.toLocaleString()}`}
       />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr]">
@@ -85,11 +86,43 @@ export default async function AdminEnquiryDetailPage({
           </div>
         </Panel>
 
-        <Panel title="Submission">
-          <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
-            {enquiry.summary}
-          </pre>
-        </Panel>
+        <div className="space-y-6">
+          <Panel title="Submission">
+            <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+              {enquiry.summary}
+            </pre>
+          </Panel>
+
+          {enquiry.transcript && enquiry.transcript.length > 0 && (
+            <Panel title="Conversation">
+              <p className="mb-4 text-xs text-[var(--muted)]">
+                What this visitor asked the assistant before leaving their details.
+              </p>
+              <div className="space-y-3">
+                {enquiry.transcript.map((line, i) => (
+                  <div
+                    key={i}
+                    className={clsx(
+                      "flex",
+                      line.role === "user" ? "justify-end" : "justify-start",
+                    )}
+                  >
+                    <div
+                      className={clsx(
+                        "max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
+                        line.role === "user"
+                          ? "rounded-br-md bg-violet-600 text-white"
+                          : "rounded-bl-md border border-[var(--border)] bg-[var(--surface-sunken)]",
+                      )}
+                    >
+                      {line.text}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Panel>
+          )}
+        </div>
       </div>
     </div>
   );
