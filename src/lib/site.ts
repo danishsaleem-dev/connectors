@@ -79,13 +79,12 @@ export const site = {
   offices,
   primaryOffice,
 
-  /** TODO: replace with the real addresses before launch. */
   email: {
-    general: "info@connectors.example",
-    brands: "brands@connectors.example",
-    franchise: "franchise@connectors.example",
-    landlords: "landlords@connectors.example",
-    investors: "investors@connectors.example",
+    general: "info@connectors.group",
+    brands: "brands@connectors.group",
+    franchise: "franchise@connectors.group",
+    landlords: "landlords@connectors.group",
+    investors: "investors@connectors.group",
   },
 
   /** TODO: replace with real profiles, or delete the ones that don't exist. */
