@@ -122,7 +122,7 @@ export function Header() {
               doesn't reliably beat it. */}
           <div className="hidden items-center gap-2 md:flex">
             <ButtonLink href="/portal/login" variant="ghost" size="sm" showIcon={false}>
-              Login
+              Join
             </ButtonLink>
             <ButtonLink href="/for-brands" size="sm">
               Start a conversation
