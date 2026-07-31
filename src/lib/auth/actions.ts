@@ -12,9 +12,10 @@ import {
   landlordProfiles,
   organizations,
   users,
+  vendorProfiles,
   type OrgType,
 } from "@/lib/db/schema";
-import { SELF_SERVICE_TYPES } from "@/lib/portal/domain";
+import { SELF_SERVICE_TYPES, slugify } from "@/lib/portal/domain";
 import { hashPassword, verifyPassword } from "./password";
 import { COOKIE_NAME, SESSION_TTL_SECONDS, createSessionToken } from "./session";
 
@@ -44,7 +45,7 @@ async function setSessionCookie(payload: {
 /** Creates the empty profile row matching the organization's type, so the
  * onboarding wizard always has a record to update rather than having to
  * branch on insert-vs-update. */
-async function createProfileFor(type: OrgType, organizationId: string) {
+async function createProfileFor(type: OrgType, organizationId: string, orgName: string) {
   const db = getDb();
   switch (type) {
     case "brand":
@@ -61,6 +62,15 @@ async function createProfileFor(type: OrgType, organizationId: string) {
       break;
     case "investor":
       await db.insert(investorProfiles).values({ organizationId });
+      break;
+    case "vendor":
+      // Seed the slug from the org name so a self-signed-up vendor already
+      // has a valid public URL waiting the moment an admin publishes them —
+      // matches the admin-created path in portal/actions.ts.
+      await db.insert(vendorProfiles).values({
+        organizationId,
+        slug: `${slugify(orgName)}-${organizationId.slice(0, 6)}`,
+      });
       break;
   }
 }
@@ -125,7 +135,7 @@ export async function register(
       .values({ name: orgName, type })
       .returning();
 
-    await createProfileFor(type, org.id);
+    await createProfileFor(type, org.id, orgName);
 
     const passwordHash = await hashPassword(password);
     const [user] = await db

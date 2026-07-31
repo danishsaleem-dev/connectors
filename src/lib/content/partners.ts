@@ -50,18 +50,18 @@ export type PartnerStep = {
 export const partnerSteps: PartnerStep[] = [
   {
     step: "01",
-    title: "Apply",
-    body: "Tell us what you do, where you work and the kind of projects you want. Takes a couple of minutes.",
+    title: "Create your account",
+    body: "Sign up with your studio name and email. Takes under a minute, and your portal access is instant.",
   },
   {
     step: "02",
-    title: "We review",
-    body: "We look at your work against what our brands are actually asking for. If it's a fit, we'll set up a call.",
+    title: "Build your profile",
+    body: "Discipline, specialties, cities served, experience — the details that let a brand judge the fit before they call.",
   },
   {
     step: "03",
-    title: "Build your profile",
-    body: "You get a portal login and a public directory profile — specialties, cities, experience, the lot.",
+    title: "We publish you",
+    body: "Our team reviews the profile against what our brands are actually asking for, then publishes it to the public directory.",
   },
   {
     step: "04",

@@ -96,9 +96,16 @@ export function orgTypeBySlug(slug: string): OrgTypeMeta | undefined {
 
 /** Types a visitor can self-register as. Investors are added by Connectors
  * directly, since capital relationships start with a conversation. Vendors
- * apply through /become-a-vendor and are onboarded after vetting — a public
- * directory listing isn't something you grant on self-signup. */
-export const SELF_SERVICE_TYPES: OrgType[] = ["brand", "franchisee", "landlord", "developer"];
+ * sign up instantly through /become-a-vendor, then complete onboarding —
+ * the directory listing itself stays gated behind `isPublished`, so a
+ * self-signup account doesn't reach the public directory until reviewed. */
+export const SELF_SERVICE_TYPES: OrgType[] = [
+  "brand",
+  "franchisee",
+  "landlord",
+  "developer",
+  "vendor",
+];
 
 /** URL-safe slug for a vendor's public directory profile. Lives here rather
  * than in actions.ts because that file's top-level "use server" would turn a
