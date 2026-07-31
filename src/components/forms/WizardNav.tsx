@@ -30,7 +30,7 @@ export function WizardNav({
           {pending ? "Submitting…" : submitLabel}
         </Button>
       ) : (
-        <Button type="button" showIcon={false} onClick={onNext}>
+        <Button type="button" onClick={onNext}>
           Continue
         </Button>
       )}

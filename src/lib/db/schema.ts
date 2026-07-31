@@ -69,6 +69,9 @@ export const brandProfiles = pgTable("brand_profiles", {
   organizationId: uuid("organization_id")
     .primaryKey()
     .references(() => organizations.id, { onDelete: "cascade" }),
+  /** A private Storage path (see resolveMediaUrl), same convention as
+   * property photos — never a public URL. */
+  logoUrl: text("logo_url"),
   industry: text("industry"),
   description: text("description"),
   website: text("website"),
@@ -244,6 +247,32 @@ export const documents = pgTable("documents", {
   title: text("title").notNull(),
   url: text("url").notNull(),
   kind: documentKindEnum("kind").notNull().default("document"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/**
+ * The media library's index — one row per uploaded file, independent of
+ * whatever field ends up pointing at it (a brand's logoUrl, a property's
+ * photos[], a document's url are all still plain path strings; this table
+ * exists so the picker modal has something to list, search and browse).
+ *
+ * organizationId is nullable on purpose: a logo picked or uploaded before an
+ * org exists (the "Add brand" form) lands here with organizationId null and
+ * uploadedByUserId set instead, then gets claimed (organizationId filled in)
+ * once the org is actually created — see createOrganization.
+ */
+export const media = pgTable("media", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: uuid("organization_id").references(() => organizations.id, {
+    onDelete: "cascade",
+  }),
+  uploadedByUserId: uuid("uploaded_by_user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  path: text("path").notNull(),
+  filename: text("filename").notNull(),
+  contentType: text("content_type").notNull(),
+  size: integer("size").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

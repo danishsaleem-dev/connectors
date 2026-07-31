@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth/current-user";
 import { getDb } from "@/lib/db/client";
 import { organizations, requests } from "@/lib/db/schema";
 import { ActionForm } from "@/components/portal/ActionForm";
+import { ListToolbar, matchesQuery } from "@/components/portal/ListToolbar";
 import { PortalHeader } from "@/components/portal/PortalHeader";
 import { EmptyState, Panel, Pill, formatRange } from "@/components/portal/ui";
 import { Select } from "@/components/ui";
@@ -15,10 +16,20 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function AdminRequestsPage() {
-  await requireAdmin();
+const STATUS_OPTIONS = Object.entries(REQUEST_STATUS_LABEL).map(([value, label]) => ({
+  value,
+  label,
+}));
 
-  const rows = await getDb()
+export default async function AdminRequestsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; status?: string }>;
+}) {
+  await requireAdmin();
+  const { q, status } = await searchParams;
+
+  const allRows = await getDb()
     .select({
       id: requests.id,
       type: requests.type,
@@ -40,6 +51,12 @@ export default async function AdminRequestsPage() {
     .innerJoin(organizations, eq(requests.organizationId, organizations.id))
     .orderBy(desc(requests.createdAt));
 
+  const rows = allRows.filter(
+    (request) =>
+      matchesQuery(q, request.title, request.organizationName, ...(request.cities ?? [])) &&
+      (!status || request.status === status),
+  );
+
   return (
     <div>
       <PortalHeader
@@ -47,8 +64,18 @@ export default async function AdminRequestsPage() {
         subtitle="What franchisees and investors are looking for. Follow up directly using their contact details."
       />
 
-      {rows.length === 0 ? (
+      <ListToolbar
+        action="/portal/admin/requests"
+        placeholder="Search by title, organization or city…"
+        query={q}
+        statusOptions={STATUS_OPTIONS}
+        statusValue={status}
+      />
+
+      {allRows.length === 0 ? (
         <EmptyState>No requests submitted yet.</EmptyState>
+      ) : rows.length === 0 ? (
+        <EmptyState>No requests match that search.</EmptyState>
       ) : (
         <div className="space-y-4">
           {rows.map((request) => {
@@ -97,14 +124,16 @@ export default async function AdminRequestsPage() {
                     hiddenFields={{ id: request.id }}
                     size="sm"
                     variant="secondary"
-                    className="w-44 shrink-0 sm:grid-cols-1"
+                    layout="inline"
                   >
-                    <Select name="status" defaultValue={request.status}>
-                      <option value="open">Open</option>
-                      <option value="in_review">In review</option>
-                      <option value="matched">Matched</option>
-                      <option value="closed">Closed</option>
-                    </Select>
+                    <span className="w-36 shrink-0">
+                      <Select name="status" defaultValue={request.status}>
+                        <option value="open">Open</option>
+                        <option value="in_review">In review</option>
+                        <option value="matched">Matched</option>
+                        <option value="closed">Closed</option>
+                      </Select>
+                    </span>
                   </ActionForm>
                 </div>
               </Panel>

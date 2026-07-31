@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { Resend } from "resend";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { hashPassword } from "@/lib/auth/password";
@@ -13,6 +13,7 @@ import {
   franchiseeProfiles,
   investorProfiles,
   landlordProfiles,
+  media,
   messages,
   organizations,
   properties,
@@ -102,7 +103,14 @@ function generateTempPassword() {
 async function writeProfile(type: OrgType, organizationId: string, formData: FormData) {
   const db = getDb();
   switch (type) {
-    case "brand":
+    case "brand": {
+      // The logo field is a path chosen through the media library picker,
+      // not a raw file upload — the picker's own action handles uploading and
+      // hands back a path string. Only set logoUrl when one was actually
+      // chosen, so re-saving the rest of the profile without touching the
+      // logo doesn't null out the existing one.
+      const logoPath = str(formData, "logo");
+
       await db
         .update(brandProfiles)
         .set({
@@ -118,9 +126,11 @@ async function writeProfile(type: OrgType, organizationId: string, formData: For
           franchiseFee: num(formData, "franchiseFee"),
           royaltyPercent: num(formData, "royaltyPercent"),
           spaceRequiredSqft: num(formData, "spaceRequiredSqft"),
+          ...(logoPath ? { logoUrl: logoPath } : {}),
         })
         .where(eq(brandProfiles.organizationId, organizationId));
       break;
+    }
     case "franchisee":
       await db
         .update(franchiseeProfiles)
@@ -343,6 +353,31 @@ export async function deleteProperty(
   }
 }
 
+/** Admin-only quick action from the properties list — mirrors
+ * setRequestStatus rather than reusing saveProperty, which expects a full
+ * form's worth of fields. */
+export async function setPropertyStatus(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdminUser();
+    const id = str(formData, "id");
+    const status = str(formData, "status");
+    if (!id || !status) return { ok: false, error: "Missing property or status." };
+
+    await getDb()
+      .update(properties)
+      .set({ status: status as (typeof properties.$inferInsert)["status"] })
+      .where(eq(properties.id, id));
+
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("setPropertyStatus", err, "Couldn't update that property.");
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /*  Requests — franchisee/investor demand, admin-reviewed only         */
 /* ------------------------------------------------------------------ */
@@ -444,6 +479,28 @@ export async function createOrganization(
       case "investor":
         await db.insert(investorProfiles).values({ organizationId: org.id });
         break;
+    }
+
+    // The "add" form asks for the same profile questions as the edit form —
+    // fill the row just inserted rather than leaving it blank until the next
+    // visit to the org's detail page.
+    const phone = str(formData, "phone");
+    const country = str(formData, "country");
+    if (phone || country) {
+      await db.update(organizations).set({ phone, country }).where(eq(organizations.id, org.id));
+    }
+    await writeProfile(type, org.id, formData);
+
+    // A logo picked before the org existed lives in the holding area
+    // (organizationId null). Now that there's a real org, link it — purely
+    // for the library's per-org filter; brandProfiles.logoUrl above already
+    // has the path regardless.
+    const logoPath = str(formData, "logo");
+    if (logoPath) {
+      await db
+        .update(media)
+        .set({ organizationId: org.id })
+        .where(and(eq(media.path, logoPath), isNull(media.organizationId)));
     }
 
     revalidatePortal();
@@ -604,6 +661,46 @@ export async function createDocument(
     return { ok: true };
   } catch (err) {
     return fail("createDocument", err, "Couldn't add that document.");
+  }
+}
+
+/** Admin-only, matching createDocument — documents are shared TO an
+ * organization by Connectors staff, never uploaded by the org itself, so
+ * managing the library (rename/delete) follows the same rule. */
+export async function renameDocument(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdminUser();
+    const id = str(formData, "id");
+    const title = str(formData, "title");
+    if (!id || !title) return { ok: false, error: "Enter a name." };
+
+    await getDb().update(documents).set({ title }).where(eq(documents.id, id));
+
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("renameDocument", err, "Couldn't rename that file.");
+  }
+}
+
+export async function deleteDocument(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdminUser();
+    const id = str(formData, "id");
+    if (!id) return { ok: false, error: "Missing file." };
+
+    await getDb().delete(documents).where(eq(documents.id, id));
+
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("deleteDocument", err, "Couldn't delete that file.");
   }
 }
 

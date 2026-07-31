@@ -3,12 +3,11 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/current-user";
 import { getDb } from "@/lib/db/client";
 import { organizations, users } from "@/lib/db/schema";
-import { ActionForm } from "@/components/portal/ActionForm";
+import { ListToolbar, matchesQuery } from "@/components/portal/ListToolbar";
 import { PortalHeader } from "@/components/portal/PortalHeader";
 import { ResetPasswordButton } from "@/components/portal/ResetPasswordButton";
-import { ListRow, Panel, Pill } from "@/components/portal/ui";
-import { Checkbox, Field, Input, Select } from "@/components/ui";
-import { createPortalUser } from "@/lib/portal/actions";
+import { EmptyState, ListRow, Pill } from "@/components/portal/ui";
+import { ButtonLink } from "@/components/ui";
 import { orgTypeMeta } from "@/lib/portal/domain";
 
 export const metadata: Metadata = {
@@ -16,8 +15,13 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function AdminAccountsPage() {
+export default async function AdminAccountsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   await requireAdmin();
+  const { q } = await searchParams;
   const db = getDb();
 
   const [allUsers, allOrgs] = await Promise.all([
@@ -25,71 +29,61 @@ export default async function AdminAccountsPage() {
     db.select().from(organizations).orderBy(organizations.name),
   ]);
   const orgById = new Map(allOrgs.map((o) => [o.id, o]));
+  const filteredUsers = allUsers.filter((user) =>
+    matchesQuery(q, user.name, user.email, orgById.get(user.organizationId ?? "")?.name),
+  );
 
   return (
     <div>
-      <PortalHeader title="Accounts" subtitle="Portal logins for participants and staff." />
+      <PortalHeader
+        title="Accounts"
+        subtitle="Portal logins for participants and staff."
+        action={
+          <ButtonLink href="/portal/admin/accounts/new" size="sm">
+            Create account
+          </ButtonLink>
+        }
+      />
 
-      <Panel title="Create account">
-        <ActionForm
-          action={createPortalUser}
-          submitLabel="Create account"
-          pendingLabel="Creating…"
-          successMessage="Account created and invitation emailed."
-        >
-          <Field label="Name">
-            <Input name="name" required />
-          </Field>
-          <Field label="Email">
-            <Input name="email" type="email" required />
-          </Field>
-          <Field label="Organization" hint="Not needed for admin accounts">
-            <Select name="organizationId">
-              <option value="">—</option>
-              {allOrgs.map((org) => (
-                <option key={org.id} value={org.id}>
-                  {org.name} — {orgTypeMeta(org.type).singular}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <div className="self-end pb-2">
-            <Checkbox name="isAdmin" label="Connectors staff (admin)" />
-          </div>
-        </ActionForm>
-      </Panel>
+      <ListToolbar action="/portal/admin/accounts" placeholder="Search by name, email or organization…" query={q} />
 
-      <div className="mt-8 space-y-2">
-        {allUsers.map((user) => {
-          const org = user.organizationId ? orgById.get(user.organizationId) : undefined;
-          const orgHref = org ? `/portal/admin/${orgTypeMeta(org.type).slug}/${org.id}` : undefined;
-          return (
-            <ListRow
-              key={user.id}
-              // The row itself isn't a link — trailing holds a real button,
-              // and nesting a <form> inside an <a> is invalid HTML. The org
-              // name is the click target instead.
-              title={
-                orgHref ? (
-                  <Link href={orgHref} className="hover:text-violet-600">
-                    {user.name}
-                  </Link>
-                ) : (
-                  user.name
-                )
-              }
-              meta={[user.email, org?.name].filter(Boolean).join(" · ")}
-              trailing={
-                <div className="flex items-center gap-3">
-                  <Pill tone={user.isAdmin ? "violet" : "neutral"}>
-                    {user.isAdmin ? "Admin" : org ? orgTypeMeta(org.type).singular : "No org"}
-                  </Pill>
-                  <ResetPasswordButton userId={user.id} />
-                </div>
-              }
-            />
-          );
-        })}
+      <div className="space-y-2">
+        {allUsers.length === 0 ? (
+          <EmptyState>No accounts yet.</EmptyState>
+        ) : filteredUsers.length === 0 ? (
+          <EmptyState>No accounts match that search.</EmptyState>
+        ) : (
+          filteredUsers.map((user) => {
+            const org = user.organizationId ? orgById.get(user.organizationId) : undefined;
+            const orgHref = org ? `/portal/admin/${orgTypeMeta(org.type).slug}/${org.id}` : undefined;
+            return (
+              <ListRow
+                key={user.id}
+                // The row itself isn't a link — trailing holds a real button,
+                // and nesting a <form> inside an <a> is invalid HTML. The org
+                // name is the click target instead.
+                title={
+                  orgHref ? (
+                    <Link href={orgHref} className="hover:text-violet-600">
+                      {user.name}
+                    </Link>
+                  ) : (
+                    user.name
+                  )
+                }
+                meta={[user.email, org?.name].filter(Boolean).join(" · ")}
+                trailing={
+                  <div className="flex items-center gap-3">
+                    <Pill tone={user.isAdmin ? "violet" : "neutral"}>
+                      {user.isAdmin ? "Admin" : org ? orgTypeMeta(org.type).singular : "No org"}
+                    </Pill>
+                    <ResetPasswordButton userId={user.id} />
+                  </div>
+                }
+              />
+            );
+          })
+        )}
       </div>
     </div>
   );

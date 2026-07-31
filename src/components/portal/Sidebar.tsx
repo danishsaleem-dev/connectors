@@ -11,6 +11,7 @@ import {
   ChevronsRight,
   ClipboardList,
   Handshake,
+  Image as ImageIcon,
   Inbox,
   LayoutDashboard,
   LogOut,
@@ -38,6 +39,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/portal/admin/investors", label: "Investors", icon: TrendingUp },
   { href: "/portal/admin/properties", label: "Properties", icon: MapPin },
   { href: "/portal/admin/requests", label: "Requests", icon: ClipboardList },
+  { href: "/portal/admin/media", label: "Media", icon: ImageIcon },
   { href: "/portal/admin/accounts", label: "Accounts", icon: UserPlus },
 ];
 

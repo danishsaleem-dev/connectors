@@ -26,6 +26,7 @@ export function ActionForm({
   submitClassName,
   size = "md",
   variant = "primary",
+  layout = "stacked",
 }: {
   action: (state: ActionState, formData: FormData) => Promise<ActionState>;
   submitLabel: string;
@@ -37,18 +38,63 @@ export function ActionForm({
   submitClassName?: string;
   size?: "sm" | "md" | "lg";
   variant?: "primary" | "secondary";
+  /** "stacked" (default) is the multi-field form shape — fields in a 2-col
+   * grid, the submit button on its own full-width row below. "inline" is for
+   * a single-field list-row quick action — field and button side by side, one
+   * line, no wasted row height. */
+  layout?: "stacked" | "inline";
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
 
+  const messages = (
+    <>
+      {state.tempPassword && (
+        <p className="mt-3 text-sm text-violet-700">
+          Account created. Temporary password (shown once — RESEND_API_KEY isn&apos;t set, so
+          this wasn&apos;t emailed):{" "}
+          <code className="rounded bg-violet-50 px-1.5 py-0.5">{state.tempPassword}</code>
+        </p>
+      )}
+      {state.ok && !state.tempPassword && (
+        <p className="mt-3 text-sm text-green-700">{successMessage}</p>
+      )}
+      {state.error && (
+        <p role="alert" className="mt-3 text-sm text-red-600">
+          {state.error}
+        </p>
+      )}
+    </>
+  );
+
+  const hidden =
+    hiddenFields &&
+    Object.entries(hiddenFields).map(([name, value]) =>
+      value === undefined ? null : <input key={name} type="hidden" name={name} value={value} />,
+    );
+
+  if (layout === "inline") {
+    return (
+      <form action={formAction} className={clsx("flex flex-wrap items-center gap-2", className)}>
+        {hidden}
+        {children}
+        <Button
+          type="submit"
+          size={size}
+          variant={variant}
+          disabled={pending}
+          showIcon={!pending}
+          className={submitClassName}
+        >
+          {pending ? (pendingLabel ?? "Saving…") : submitLabel}
+        </Button>
+        {(state.ok || state.error) && <div className="w-full">{messages}</div>}
+      </form>
+    );
+  }
+
   return (
     <form action={formAction} className={clsx("grid gap-4 sm:grid-cols-2", className)}>
-      {hiddenFields &&
-        Object.entries(hiddenFields).map(([name, value]) =>
-          value === undefined ? null : (
-            <input key={name} type="hidden" name={name} value={value} />
-          ),
-        )}
-
+      {hidden}
       {children}
 
       <div className="sm:col-span-2">
@@ -57,27 +103,12 @@ export function ActionForm({
           size={size}
           variant={variant}
           disabled={pending}
-          showIcon={false}
+          showIcon={!pending}
           className={submitClassName}
         >
           {pending ? (pendingLabel ?? "Saving…") : submitLabel}
         </Button>
-
-        {state.tempPassword && (
-          <p className="mt-3 text-sm text-violet-700">
-            Account created. Temporary password (shown once — RESEND_API_KEY isn&apos;t set, so
-            this wasn&apos;t emailed):{" "}
-            <code className="rounded bg-violet-50 px-1.5 py-0.5">{state.tempPassword}</code>
-          </p>
-        )}
-        {state.ok && !state.tempPassword && (
-          <p className="mt-3 text-sm text-green-700">{successMessage}</p>
-        )}
-        {state.error && (
-          <p role="alert" className="mt-3 text-sm text-red-600">
-            {state.error}
-          </p>
-        )}
+        {messages}
       </div>
     </form>
   );

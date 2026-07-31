@@ -51,6 +51,7 @@ CREATE TABLE "users" (
 
 CREATE TABLE "brand_profiles" (
 	"organization_id" uuid PRIMARY KEY NOT NULL,
+	"logo_url" text,
 	"industry" text,
 	"description" text,
 	"website" text,

@@ -1,4 +1,5 @@
 import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui";
+import { MediaPicker, type MediaValue } from "@/components/portal/MediaPicker";
 import { INDUSTRIES } from "@/lib/portal/domain";
 import type { OrgType } from "@/lib/db/schema";
 
@@ -30,13 +31,30 @@ function checked(profile: ProfileRecord, key: string) {
 export function ProfileFields({
   type,
   profile,
+  organizationId,
+  logoPreview,
 }: {
   type: OrgType;
   profile: ProfileRecord;
+  /** Only used by the brand branch's logo picker. Null on the "Add brand"
+   * create page — no org exists yet, so the picker uses the current admin's
+   * own holding area instead of scoping to one. */
+  organizationId?: string | null;
+  /** The existing logo, pre-resolved to a signed URL by the caller (a Server
+   * Component, where resolveMediaUrl actually lives) — this file stays a
+   * plain sync component. */
+  logoPreview?: MediaValue | null;
 }) {
   if (type === "brand") {
     return (
       <>
+        <Field label="Brand logo" className="sm:col-span-2">
+          <MediaPicker
+            name="logo"
+            organizationId={organizationId ?? null}
+            initial={logoPreview ? [logoPreview] : []}
+          />
+        </Field>
         <Field label="Industry" className="sm:col-span-2">
           <Select name="industry" defaultValue={text(profile, "industry")}>
             <option value="">Select an industry</option>

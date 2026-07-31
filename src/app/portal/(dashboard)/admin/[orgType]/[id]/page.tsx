@@ -16,6 +16,7 @@ import { PropertyMediaFields } from "@/components/portal/PropertyMediaFields";
 import { ResetPasswordButton } from "@/components/portal/ResetPasswordButton";
 import { EmptyState, ListRow, Panel, Pill } from "@/components/portal/ui";
 import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui";
+import { resolveMediaUrl } from "@/lib/storage/media";
 import {
   createDocument,
   deleteProperty,
@@ -69,11 +70,27 @@ export default async function AdminOrgDetailPage({
       .orderBy(asc(messages.createdAt)),
   ]);
 
+  const logoPath =
+    org.type === "brand" && typeof profile?.logoUrl === "string" ? profile.logoUrl : null;
+  const logoUrl = await resolveMediaUrl(logoPath);
+
   return (
     <div>
       <PortalHeader
         title={org.name}
         subtitle={`${meta.singular} · joined ${org.createdAt.toLocaleDateString()}`}
+        action={
+          logoUrl && (
+            // A private, signed Storage URL — not something next/image's
+            // remote-pattern allowlist can know about ahead of time.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={logoUrl}
+              alt={`${org.name} logo`}
+              className="h-14 w-14 shrink-0 rounded-xl border border-[var(--border)] object-cover"
+            />
+          )
+        }
       />
 
       <Panel title="Details">
@@ -98,7 +115,12 @@ export default async function AdminOrgDetailPage({
           <Field label="Country">
             <Input name="country" defaultValue={org.country ?? ""} />
           </Field>
-          <ProfileFields type={org.type} profile={profile} />
+          <ProfileFields
+            type={org.type}
+            profile={profile}
+            organizationId={org.id}
+            logoPreview={logoPath ? { path: logoPath, url: logoUrl } : null}
+          />
         </ActionForm>
       </Panel>
 
