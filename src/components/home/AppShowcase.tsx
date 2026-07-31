@@ -78,7 +78,7 @@ export function AppShowcase() {
                 <ButtonLink href="/app" variant="onDark" size="lg">
                   Explore the app
                 </ButtonLink>
-                <ButtonLink href="/services/technology" variant="outline" size="lg">
+                <ButtonLink href="/solutions/technology" variant="outline" size="lg">
                   Technology division
                 </ButtonLink>
               </div>

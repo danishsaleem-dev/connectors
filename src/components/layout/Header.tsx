@@ -13,7 +13,7 @@ import { audiences } from "@/lib/site";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
-type MenuKey = "services" | "audiences";
+type MenuKey = "solutions" | "audiences";
 
 export function Header() {
   const pathname = usePathname();
@@ -89,11 +89,11 @@ export function Header() {
           </NavLink>
 
           <MenuTrigger
-            label="Services"
-            open={openMenu === "services"}
+            label="Solutions"
+            open={openMenu === "solutions"}
             onOpen={() => {
               cancelClose();
-              setOpenMenu("services");
+              setOpenMenu("solutions");
             }}
           />
           <MenuTrigger
@@ -156,7 +156,7 @@ export function Header() {
             className="hidden border-b border-[var(--border)] bg-[var(--background)]/95 backdrop-blur-xl lg:block"
           >
             <div className="shell py-8">
-              {openMenu === "services" ? <ServicesMenu /> : <AudiencesMenu />}
+              {openMenu === "solutions" ? <SolutionsMenu /> : <AudiencesMenu />}
             </div>
           </motion.div>
         )}
@@ -193,10 +193,10 @@ export function Header() {
                 <MobileLink href="/become-a-vendor">Become a vendor</MobileLink>
               </MobileGroup>
 
-              <MobileGroup title="Services">
-                <MobileLink href="/services">All services</MobileLink>
+              <MobileGroup title="Solutions">
+                <MobileLink href="/solutions">All solutions</MobileLink>
                 {divisions.map((d) => (
-                  <MobileLink key={d.slug} href={`/services/${d.slug}`}>
+                  <MobileLink key={d.slug} href={`/solutions/${d.slug}`}>
                     {d.navLabel}
                   </MobileLink>
                 ))}
@@ -275,7 +275,7 @@ function MenuTrigger({
   );
 }
 
-function ServicesMenu() {
+function SolutionsMenu() {
   return (
     <div className="grid grid-cols-[1fr_2fr] gap-10">
       <div>
@@ -284,17 +284,17 @@ function ServicesMenu() {
           One ecosystem, end to end.
         </p>
         <Link
-          href="/services"
+          href="/solutions"
           className="mt-5 inline-block text-sm text-violet-600 underline underline-offset-4"
         >
-          View all services
+          View all solutions
         </Link>
       </div>
       <ul className="grid grid-cols-2 gap-x-8 gap-y-1">
         {divisions.map((d) => (
           <li key={d.slug}>
             <Link
-              href={`/services/${d.slug}`}
+              href={`/solutions/${d.slug}`}
               className="group flex gap-4 rounded-2xl px-4 py-3 transition-colors hover:bg-violet-600/[0.05]"
             >
               <span className="font-display text-sm text-violet-400">{d.index}</span>

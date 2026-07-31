@@ -145,7 +145,7 @@ export default function AboutPage() {
         </div>
       </Section>
 
-      <CtaSection secondary={{ href: "/services", label: "Explore our divisions" }} />
+      <CtaSection secondary={{ href: "/solutions", label: "Explore our divisions" }} />
     </>
   );
 }

@@ -30,10 +30,10 @@ export function Footer() {
             </p>
           </div>
 
-          <FooterColumn title="Services">
-            <FooterLink href="/services">All services</FooterLink>
+          <FooterColumn title="Solutions">
+            <FooterLink href="/solutions">All solutions</FooterLink>
             {divisions.map((d) => (
-              <FooterLink key={d.slug} href={`/services/${d.slug}`}>
+              <FooterLink key={d.slug} href={`/solutions/${d.slug}`}>
                 {d.navLabel}
               </FooterLink>
             ))}

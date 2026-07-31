@@ -37,7 +37,7 @@ export async function generateMetadata({
   return {
     title: division.title,
     description: division.lead,
-    alternates: { canonical: `/services/${division.slug}` },
+    alternates: { canonical: `/solutions/${division.slug}` },
   };
 }
 
@@ -66,8 +66,8 @@ export default async function DivisionPage({
           }),
           breadcrumbLd([
             { name: "Home", path: "/" },
-            { name: "Services", path: "/services" },
-            { name: division.title, path: `/services/${division.slug}` },
+            { name: "Solutions", path: "/solutions" },
+            { name: division.title, path: `/solutions/${division.slug}` },
           ]),
         ]}
       />
@@ -168,7 +168,7 @@ export default async function DivisionPage({
 
       <CtaSection
         photo={photo}
-        secondary={{ href: "/services", label: "View all divisions" }}
+        secondary={{ href: "/solutions", label: "View all divisions" }}
       />
     </>
   );

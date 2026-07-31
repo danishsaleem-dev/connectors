@@ -3,7 +3,7 @@ import { divisions } from "@/lib/content/divisions";
 import { SITE_URL } from "@/lib/seo";
 import { audiences } from "@/lib/site";
 
-const STATIC_ROUTES = ["/", "/about", "/services", "/app", "/contact"];
+const STATIC_ROUTES = ["/", "/about", "/solutions", "/app", "/contact"];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
@@ -21,7 +21,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }));
 
   const divisionEntries = divisions.map((d) => ({
-    url: `${SITE_URL}/services/${d.slug}`,
+    url: `${SITE_URL}/solutions/${d.slug}`,
     lastModified,
     priority: 0.6,
   }));

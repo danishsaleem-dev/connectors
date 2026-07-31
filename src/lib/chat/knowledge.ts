@@ -80,7 +80,7 @@ export const knowledge: KnowledgeEntry[] = [
       "hospitality",
       "retail chains",
     ],
-    link: { href: "/services", label: "Our services" },
+    link: { href: "/solutions", label: "Our services" },
   },
   {
     id: "locations",
@@ -234,7 +234,7 @@ export const knowledge: KnowledgeEntry[] = [
     ],
     // A mall or project owner is offering space, so they enter the pipeline the
     // same way a landlord does — there's no separate developer enquiry source.
-    link: { href: "/services/mall-projects", label: "Mall & project support" },
+    link: { href: "/solutions/mall-projects", label: "Mall & project support" },
     leadSource: "landlord",
   },
 
@@ -255,7 +255,7 @@ export const knowledge: KnowledgeEntry[] = [
       "become a franchisor",
       "scale my business",
     ],
-    link: { href: "/services/franchise-development", label: "Franchise development" },
+    link: { href: "/solutions/franchise-development", label: "Franchise development" },
     leadSource: "brand",
   },
   {
@@ -271,7 +271,7 @@ export const knowledge: KnowledgeEntry[] = [
       "vetting",
       "qualify",
     ],
-    link: { href: "/services/franchise-development", label: "How matching works" },
+    link: { href: "/solutions/franchise-development", label: "How matching works" },
   },
   {
     id: "process",
@@ -289,7 +289,7 @@ export const knowledge: KnowledgeEntry[] = [
       "how do we start",
       "next steps",
     ],
-    link: { href: "/services", label: "Our services" },
+    link: { href: "/solutions", label: "Our services" },
   },
   {
     id: "services",
@@ -303,7 +303,7 @@ export const knowledge: KnowledgeEntry[] = [
       "capabilities",
       "departments",
     ],
-    link: { href: "/services", label: "All services" },
+    link: { href: "/solutions", label: "All services" },
   },
   {
     id: "marketing",
@@ -321,7 +321,7 @@ export const knowledge: KnowledgeEntry[] = [
       "promotion",
       "influencer",
     ],
-    link: { href: "/services/marketing-branding", label: "Marketing & branding" },
+    link: { href: "/solutions/marketing-branding", label: "Marketing & branding" },
   },
   {
     id: "app",

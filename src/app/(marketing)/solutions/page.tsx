@@ -10,17 +10,17 @@ import { photos } from "@/lib/images";
 import { audiences } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Services",
+  title: "Solutions",
   description:
     "Seven divisions covering brand expansion, franchise development, investor connections, mall and landlord services, marketing and franchise technology.",
-  alternates: { canonical: "/services" },
+  alternates: { canonical: "/solutions" },
 };
 
 const audienceLabel = Object.fromEntries(
   audiences.map((a) => [a.slug, a.nav]),
 ) as Record<string, string>;
 
-export default function ServicesPage() {
+export default function SolutionsPage() {
   return (
     <>
       <Section className="pt-32 md:pt-40">
@@ -65,7 +65,7 @@ export default function ServicesPage() {
           {divisions.map((division, i) => (
             <Link
               key={division.slug}
-              href={`/services/${division.slug}`}
+              href={`/solutions/${division.slug}`}
               className="group relative flex flex-col justify-between bg-[var(--background)] p-7 transition-colors duration-500 hover:bg-violet-50"
             >
               <Reveal i={i % 3}>

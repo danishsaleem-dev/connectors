@@ -145,7 +145,7 @@ export default function HomePage() {
           </div>
           <Reveal i={2}>
             <Link
-              href="/services"
+              href="/solutions"
               className="inline-flex items-center gap-1.5 text-sm text-violet-600 underline underline-offset-4"
             >
               View all services
@@ -172,7 +172,7 @@ export default function HomePage() {
           {divisions.map((division, i) => (
             <Link
               key={division.slug}
-              href={`/services/${division.slug}`}
+              href={`/solutions/${division.slug}`}
               className="group relative flex flex-col justify-between bg-[var(--background)] p-7 transition-colors duration-500 hover:bg-violet-50"
             >
               <Reveal i={i % 3}>
@@ -299,7 +299,7 @@ export default function HomePage() {
         </Section>
       )}
 
-      <CtaSection secondary={{ href: "/services", label: "Explore services" }} />
+      <CtaSection secondary={{ href: "/solutions", label: "Explore services" }} />
     </>
   );
 }

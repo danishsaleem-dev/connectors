@@ -78,7 +78,7 @@ export function serviceLd(input: {
     "@type": "Service",
     name: input.name,
     description: input.description,
-    url: absoluteUrl(`/services/${input.slug}`),
+    url: absoluteUrl(`/solutions/${input.slug}`),
     provider: {
       "@type": "Organization",
       name: site.name,

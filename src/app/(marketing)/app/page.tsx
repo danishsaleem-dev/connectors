@@ -185,7 +185,7 @@ export default function AppPage() {
         eyebrow="Get the app"
         title="Ask us for early access."
         body="The app rolls out alongside every brand and franchisee we onboard. Tell us where you are in the process and we'll get you set up."
-        secondary={{ href: "/services/technology", label: "Technology division" }}
+        secondary={{ href: "/solutions/technology", label: "Technology division" }}
       />
     </>
   );
