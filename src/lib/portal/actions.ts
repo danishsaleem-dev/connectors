@@ -20,9 +20,11 @@ import {
   properties,
   requests,
   users,
+  vendorProfiles,
   type OrgType,
 } from "@/lib/db/schema";
 import { site } from "@/lib/site";
+import { slugify } from "./domain";
 import { requireAdminUser, requireOrgUser } from "./guards";
 
 export type ActionState = {
@@ -183,6 +185,37 @@ async function writeProfile(type: OrgType, organizationId: string, formData: For
         })
         .where(eq(investorProfiles.organizationId, organizationId));
       break;
+    case "vendor": {
+      // A vendor's profile is public-facing, so it carries the two fields no
+      // other type has: a URL slug and a publish gate. The slug is derived
+      // from the org name when the admin hasn't set one, and only ever
+      // written when we have a value — never blanked back to null by a save
+      // that didn't include the field.
+      const rawSlug = str(formData, "slug");
+      const slug = rawSlug ? slugify(rawSlug) : null;
+
+      await db
+        .update(vendorProfiles)
+        .set({
+          discipline: (str(formData, "discipline") ??
+            "consultant") as (typeof vendorProfiles.$inferInsert)["discipline"],
+          headline: str(formData, "headline"),
+          bio: str(formData, "bio"),
+          website: str(formData, "website"),
+          contactEmail: str(formData, "contactEmail"),
+          citiesServed: list(formData, "citiesServed"),
+          specialties: list(formData, "specialties"),
+          yearsExperience: num(formData, "yearsExperience"),
+          teamSize: num(formData, "teamSize"),
+          projectsCompleted: num(formData, "projectsCompleted"),
+          isPublished: bool(formData, "isPublished"),
+          ...(slug ? { slug } : {}),
+          ...(str(formData, "logo") ? { logoUrl: str(formData, "logo") } : {}),
+          ...(str(formData, "cover") ? { coverUrl: str(formData, "cover") } : {}),
+        })
+        .where(eq(vendorProfiles.organizationId, organizationId));
+      break;
+    }
   }
 }
 
@@ -534,6 +567,13 @@ export async function createOrganization(
         break;
       case "investor":
         await db.insert(investorProfiles).values({ organizationId: org.id });
+        break;
+      case "vendor":
+        // Seed the slug from the name so a new vendor already has a valid
+        // public URL waiting the moment an admin publishes them.
+        await db
+          .insert(vendorProfiles)
+          .values({ organizationId: org.id, slug: `${slugify(name)}-${org.id.slice(0, 6)}` });
         break;
     }
 

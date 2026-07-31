@@ -105,6 +105,9 @@ export function Header() {
             }}
           />
 
+          <NavLink href="/consultants" active={pathname.startsWith("/consultants")}>
+            Partners
+          </NavLink>
           <NavLink href="/app" active={pathname === "/app"}>
             App
           </NavLink>
@@ -182,6 +185,12 @@ export function Header() {
                     {a.nav}
                   </MobileLink>
                 ))}
+              </MobileGroup>
+
+              <MobileGroup title="Partners Program">
+                <MobileLink href="/consultants">Consultants directory</MobileLink>
+                <MobileLink href="/partners">About the programme</MobileLink>
+                <MobileLink href="/become-a-vendor">Become a vendor</MobileLink>
               </MobileGroup>
 
               <MobileGroup title="Services">

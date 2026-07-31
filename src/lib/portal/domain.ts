@@ -73,6 +73,17 @@ export const ORG_TYPES: OrgTypeMeta[] = [
     listsProperties: false,
     browsesProperties: false,
   },
+  {
+    type: "vendor",
+    slug: "vendors",
+    singular: "Vendor",
+    plural: "Vendors & Partners",
+    // A vendor's portal job is keeping its own public directory profile
+    // current — it doesn't submit requests or list space.
+    requestTypes: [],
+    listsProperties: false,
+    browsesProperties: false,
+  },
 ];
 
 export function orgTypeMeta(type: OrgType): OrgTypeMeta {
@@ -84,8 +95,50 @@ export function orgTypeBySlug(slug: string): OrgTypeMeta | undefined {
 }
 
 /** Types a visitor can self-register as. Investors are added by Connectors
- * directly, since capital relationships start with a conversation. */
+ * directly, since capital relationships start with a conversation. Vendors
+ * apply through /become-a-vendor and are onboarded after vetting — a public
+ * directory listing isn't something you grant on self-signup. */
 export const SELF_SERVICE_TYPES: OrgType[] = ["brand", "franchisee", "landlord", "developer"];
+
+/** URL-safe slug for a vendor's public directory profile. Lives here rather
+ * than in actions.ts because that file's top-level "use server" would turn a
+ * plain helper into a callable server action. */
+export function slugify(value: string) {
+  return value
+    .normalize("NFKD")
+    // Strip combining diacritics (U+0300-U+036F) by codepoint rather than a
+    // regex character class: literal combining marks in source do not survive
+    // every editor/tool round-trip, so this file stays pure ASCII.
+    .split("")
+    .filter((ch) => {
+      const cp = ch.codePointAt(0) ?? 0;
+      return cp < 0x0300 || cp > 0x036f;
+    })
+    .join("")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+}
+
+export const VENDOR_DISCIPLINE_LABEL: Record<string, string> = {
+  designer: "Designer",
+  architect: "Architect",
+  interior: "Interior Specialist",
+  agency: "Agency",
+  consultant: "Consultant",
+  contractor: "Contractor",
+};
+
+/** Plural forms for the directory's filter chips. */
+export const VENDOR_DISCIPLINE_PLURAL: Record<string, string> = {
+  designer: "Designers",
+  architect: "Architects",
+  interior: "Interior Specialists",
+  agency: "Agencies",
+  consultant: "Consultants",
+  contractor: "Contractors",
+};
 
 export const REQUEST_TYPE_LABEL: Record<RequestType, string> = {
   space: "Location",

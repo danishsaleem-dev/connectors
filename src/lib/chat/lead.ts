@@ -37,6 +37,7 @@ const SOURCE_LABEL: Record<EnquirySource, string> = {
   franchisee: "Someone looking to buy a franchise",
   landlord: "A landlord or property owner",
   investor: "An investor",
+  vendor: "A vendor or partner (design, build, consulting)",
 };
 
 function parseTranscript(raw: FormDataEntryValue | null): ChatTranscript {

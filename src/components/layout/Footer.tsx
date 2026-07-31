@@ -45,6 +45,9 @@ export function Footer() {
                 {a.nav}
               </FooterLink>
             ))}
+            <FooterLink href="/consultants">Consultants</FooterLink>
+            <FooterLink href="/partners">Partners Program</FooterLink>
+            <FooterLink href="/become-a-vendor">Become a Vendor</FooterLink>
             <FooterLink href="/app">The App</FooterLink>
             <FooterLink href="/about">About</FooterLink>
           </FooterColumn>

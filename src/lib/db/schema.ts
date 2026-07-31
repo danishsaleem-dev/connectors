@@ -27,6 +27,18 @@ export const orgTypeEnum = pgEnum("org_type", [
   "landlord",
   "developer",
   "investor",
+  "vendor",
+]);
+
+/** The trades in the Partners Program — designers, architects and the rest
+ * of the delivery side of an opening. */
+export const vendorDisciplineEnum = pgEnum("vendor_discipline", [
+  "designer",
+  "architect",
+  "interior",
+  "agency",
+  "consultant",
+  "contractor",
 ]);
 
 export const orgStatusEnum = pgEnum("org_status", ["pending", "active", "suspended"]);
@@ -139,6 +151,39 @@ export const investorProfiles = pgTable("investor_profiles", {
   horizonMonths: integer("horizon_months"),
   investmentTypes: text("investment_types").array(),
   notes: text("notes"),
+});
+
+/**
+ * Partners Program members — the delivery side (designers, architects,
+ * interior specialists, agencies, consultants, contractors).
+ *
+ * Unlike every other participant type, a vendor has a *public* face: the
+ * /consultants directory renders straight from these rows. That's what
+ * `slug` and `isPublished` are for — nothing appears on the public site
+ * until an admin publishes it, so an unfinished profile is never exposed.
+ */
+export const vendorProfiles = pgTable("vendor_profiles", {
+  organizationId: uuid("organization_id")
+    .primaryKey()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  discipline: vendorDisciplineEnum("discipline").notNull().default("consultant"),
+  /** URL segment for /consultants/<slug>. Unique so the public route can
+   * resolve one profile unambiguously. */
+  slug: text("slug").unique(),
+  isPublished: boolean("is_published").notNull().default(false),
+  /** One-line positioning shown under the name in the directory. */
+  headline: text("headline"),
+  bio: text("bio"),
+  website: text("website"),
+  contactEmail: text("contact_email"),
+  citiesServed: text("cities_served").array(),
+  specialties: text("specialties").array(),
+  yearsExperience: integer("years_experience"),
+  teamSize: integer("team_size"),
+  projectsCompleted: integer("projects_completed"),
+  /** Private Storage paths, same convention as brand logos. */
+  logoUrl: text("logo_url"),
+  coverUrl: text("cover_url"),
 });
 
 /* ------------------------------------------------------------------ */
@@ -330,6 +375,7 @@ export const enquirySourceEnum = pgEnum("enquiry_source", [
   "franchisee",
   "landlord",
   "investor",
+  "vendor",
 ]);
 
 export const enquiryStatusEnum = pgEnum("enquiry_status", ["new", "converted", "archived"]);

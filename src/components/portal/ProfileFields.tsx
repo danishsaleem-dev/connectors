@@ -1,6 +1,6 @@
 import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui";
 import { MediaPicker, type MediaValue } from "@/components/portal/MediaPicker";
-import { INDUSTRIES } from "@/lib/portal/domain";
+import { INDUSTRIES, VENDOR_DISCIPLINE_LABEL } from "@/lib/portal/domain";
 import type { OrgType } from "@/lib/db/schema";
 
 /**
@@ -220,6 +220,83 @@ export function ProfileFields({
         <Field label="Anything else" className="sm:col-span-2">
           <Textarea name="notes" defaultValue={text(profile, "notes")} rows={3} />
         </Field>
+      </>
+    );
+  }
+
+  if (type === "vendor") {
+    return (
+      <>
+        <Field label="Discipline">
+          <Select name="discipline" defaultValue={text(profile, "discipline") || "consultant"}>
+            {Object.entries(VENDOR_DISCIPLINE_LABEL).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Directory URL" hint="Used for /consultants/<slug>">
+          <Input name="slug" defaultValue={text(profile, "slug")} placeholder="studio-name" />
+        </Field>
+        <Field
+          label="Headline"
+          hint="One line, shown under the name"
+          className="sm:col-span-2"
+        >
+          <Input
+            name="headline"
+            defaultValue={text(profile, "headline")}
+            placeholder="Retail interiors for food & beverage rollouts"
+          />
+        </Field>
+        <Field label="About" className="sm:col-span-2">
+          <Textarea name="bio" defaultValue={text(profile, "bio")} rows={5} />
+        </Field>
+        <Field label="Specialties" hint="Comma separated" className="sm:col-span-2">
+          <Input
+            name="specialties"
+            defaultValue={text(profile, "specialties")}
+            placeholder="Store design, Fit-out management, 3D visualisation"
+          />
+        </Field>
+        <Field label="Cities served" hint="Comma separated" className="sm:col-span-2">
+          <Input
+            name="citiesServed"
+            defaultValue={text(profile, "citiesServed")}
+            placeholder="London, Dubai, Lahore"
+          />
+        </Field>
+        <Field label="Years experience">
+          <Input
+            name="yearsExperience"
+            type="number"
+            defaultValue={text(profile, "yearsExperience")}
+          />
+        </Field>
+        <Field label="Team size">
+          <Input name="teamSize" type="number" defaultValue={text(profile, "teamSize")} />
+        </Field>
+        <Field label="Projects completed">
+          <Input
+            name="projectsCompleted"
+            type="number"
+            defaultValue={text(profile, "projectsCompleted")}
+          />
+        </Field>
+        <Field label="Website">
+          <Input name="website" type="url" defaultValue={text(profile, "website")} />
+        </Field>
+        <Field label="Contact email" className="sm:col-span-2">
+          <Input name="contactEmail" type="email" defaultValue={text(profile, "contactEmail")} />
+        </Field>
+        <div className="sm:col-span-2">
+          <Checkbox
+            name="isPublished"
+            defaultChecked={checked(profile, "isPublished")}
+            label="Publish to the public consultants directory"
+          />
+        </div>
       </>
     );
   }

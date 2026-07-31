@@ -22,6 +22,13 @@
       "when": 1785504715191,
       "tag": "0002_huge_shard",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1785519157091,
+      "tag": "0003_short_gamma_corps",
+      "breakpoints": true
     }
   ]
 }

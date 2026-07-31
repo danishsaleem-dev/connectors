@@ -5,6 +5,7 @@ import { AudienceFaq } from "@/components/audience/AudienceFaq";
 import { AudienceGallery } from "@/components/audience/AudienceGallery";
 import { AudienceHero } from "@/components/audience/AudienceHero";
 import { FranchiseEnquiryForm } from "@/components/forms/FranchiseEnquiryForm";
+import { VendorCta } from "@/components/VendorCta";
 import { IndustriesMarquee } from "@/components/IndustriesMarquee";
 import { Reveal } from "@/components/Reveal";
 import { Eyebrow, Section } from "@/components/ui";
@@ -49,6 +50,8 @@ export default function ForFranchisePage() {
       <IndustriesMarquee />
 
       <AudienceAppPromo audience="for-franchise" />
+
+      <VendorCta />
 
       <AudienceFaq items={faqs} />
 

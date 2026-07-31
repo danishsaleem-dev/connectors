@@ -37,6 +37,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/portal/admin/landlords", label: "Landlords", icon: Building2 },
   { href: "/portal/admin/developers", label: "Malls & Developers", icon: Building },
   { href: "/portal/admin/investors", label: "Investors", icon: TrendingUp },
+  { href: "/portal/admin/vendors", label: "Vendors & Partners", icon: Handshake },
   { href: "/portal/admin/properties", label: "Properties", icon: MapPin },
   { href: "/portal/admin/requests", label: "Requests", icon: ClipboardList },
   { href: "/portal/admin/media", label: "Media", icon: ImageIcon },

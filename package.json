@@ -10,6 +10,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx scripts/seed.ts",
+    "db:seed-vendors": "tsx scripts/seed-vendors.ts",
     "chat:check": "tsx scripts/chat-check.ts"
   },
   "dependencies": {
