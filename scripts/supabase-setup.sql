@@ -17,6 +17,7 @@
 CREATE TYPE "public"."document_kind" AS ENUM('document', 'agreement');
 CREATE TYPE "public"."enquiry_source" AS ENUM('brand', 'franchisee', 'landlord', 'investor');
 CREATE TYPE "public"."enquiry_status" AS ENUM('new', 'converted', 'archived');
+CREATE TYPE "public"."franchise_status" AS ENUM('available', 'reserved', 'awarded', 'withdrawn');
 CREATE TYPE "public"."org_status" AS ENUM('pending', 'active', 'suspended');
 CREATE TYPE "public"."org_type" AS ENUM('brand', 'franchisee', 'landlord', 'developer', 'investor');
 CREATE TYPE "public"."property_status" AS ENUM('available', 'under_offer', 'leased', 'withdrawn');
@@ -182,9 +183,39 @@ CREATE TABLE "enquiries" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 
+CREATE TABLE "franchise_opportunities" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"organization_id" uuid NOT NULL,
+	"title" text NOT NULL,
+	"city" text NOT NULL,
+	"country" text,
+	"territory" text,
+	"investment_min" integer,
+	"investment_max" integer,
+	"currency" varchar(3) DEFAULT 'GBP' NOT NULL,
+	"space_required_sqft" integer,
+	"status" "franchise_status" DEFAULT 'available' NOT NULL,
+	"description" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE "media" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"organization_id" uuid,
+	"uploaded_by_user_id" uuid,
+	"path" text NOT NULL,
+	"filename" text NOT NULL,
+	"content_type" text NOT NULL,
+	"size" integer NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
 -- ---------------------------------------------------------------------
 -- Foreign keys
 -- ---------------------------------------------------------------------
+ALTER TABLE "franchise_opportunities" ADD CONSTRAINT "franchise_opportunities_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "media" ADD CONSTRAINT "media_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "media" ADD CONSTRAINT "media_uploaded_by_user_id_users_id_fk" FOREIGN KEY ("uploaded_by_user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;
 ALTER TABLE "brand_profiles" ADD CONSTRAINT "brand_profiles_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "franchisee_profiles" ADD CONSTRAINT "franchisee_profiles_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE cascade ON UPDATE no action;
 ALTER TABLE "landlord_profiles" ADD CONSTRAINT "landlord_profiles_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE cascade ON UPDATE no action;

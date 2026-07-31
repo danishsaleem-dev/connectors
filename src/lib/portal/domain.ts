@@ -111,6 +111,13 @@ export const PROPERTY_STATUS_LABEL: Record<string, string> = {
   withdrawn: "Withdrawn",
 };
 
+export const FRANCHISE_STATUS_LABEL: Record<string, string> = {
+  available: "Available",
+  reserved: "Reserved",
+  awarded: "Awarded",
+  withdrawn: "Withdrawn",
+};
+
 export const REQUEST_STATUS_LABEL: Record<string, string> = {
   open: "Open",
   in_review: "In review",

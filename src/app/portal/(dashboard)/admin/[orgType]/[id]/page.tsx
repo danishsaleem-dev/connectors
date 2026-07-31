@@ -4,7 +4,15 @@ import { asc, desc, eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth/current-user";
 import { getDb } from "@/lib/db/client";
 import { getProfile } from "@/lib/db/queries";
-import { documents, messages, organizations, properties, requests, users } from "@/lib/db/schema";
+import {
+  documents,
+  franchiseOpportunities,
+  messages,
+  organizations,
+  properties,
+  requests,
+  users,
+} from "@/lib/db/schema";
 import { ActionForm } from "@/components/portal/ActionForm";
 import { AddressPicker } from "@/components/portal/AddressPicker";
 import { DocumentUpload } from "@/components/portal/DocumentUpload";
@@ -14,17 +22,20 @@ import { DocumentLink } from "@/components/portal/PropertyMedia";
 import { ProfileFields } from "@/components/portal/ProfileFields";
 import { PropertyMediaFields } from "@/components/portal/PropertyMediaFields";
 import { ResetPasswordButton } from "@/components/portal/ResetPasswordButton";
-import { EmptyState, ListRow, Panel, Pill } from "@/components/portal/ui";
+import { EmptyState, ListRow, Panel, Pill, formatRange } from "@/components/portal/ui";
 import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui";
 import { resolveMediaUrl } from "@/lib/storage/media";
 import {
   createDocument,
+  deleteFranchiseOpportunity,
   deleteProperty,
   postMessage,
+  saveFranchiseOpportunity,
   saveProperty,
   updateOrganization,
 } from "@/lib/portal/actions";
 import {
+  FRANCHISE_STATUS_LABEL,
   PROPERTY_STATUS_LABEL,
   PROPERTY_TYPE_LABEL,
   REQUEST_STATUS_LABEL,
@@ -53,7 +64,8 @@ export default async function AdminOrgDetailPage({
   // rendering the wrong profile form.
   if (!org || org.type !== meta.type) notFound();
 
-  const [profile, orgUsers, orgProperties, orgRequests, orgDocs, orgMessages] = await Promise.all([
+  const [profile, orgUsers, orgProperties, orgRequests, orgDocs, orgMessages, orgFranchises] =
+    await Promise.all([
     getProfile(org.type, org.id),
     db.select().from(users).where(eq(users.organizationId, org.id)),
     db.select().from(properties).where(eq(properties.organizationId, org.id)),
@@ -68,6 +80,13 @@ export default async function AdminOrgDetailPage({
       .from(messages)
       .where(eq(messages.organizationId, org.id))
       .orderBy(asc(messages.createdAt)),
+    org.type === "brand"
+      ? db
+          .select()
+          .from(franchiseOpportunities)
+          .where(eq(franchiseOpportunities.organizationId, org.id))
+          .orderBy(desc(franchiseOpportunities.createdAt))
+      : Promise.resolve([]),
   ]);
 
   const logoPath =
@@ -259,6 +278,105 @@ export default async function AdminOrgDetailPage({
           </Panel>
         )}
       </div>
+
+      {org.type === "brand" && (
+        <Panel title="Franchise opportunities" className="mt-6">
+          {orgFranchises.length === 0 ? (
+            <EmptyState>No franchise opportunities listed for this brand yet.</EmptyState>
+          ) : (
+            <div className="space-y-2">
+              {orgFranchises.map((opportunity) => {
+                const investment = formatRange(
+                  opportunity.investmentMin,
+                  opportunity.investmentMax,
+                  opportunity.currency,
+                );
+                return (
+                  <ListRow
+                    key={opportunity.id}
+                    title={opportunity.title}
+                    meta={[
+                      [opportunity.city, opportunity.country].filter(Boolean).join(", "),
+                      opportunity.territory,
+                      investment,
+                      opportunity.spaceRequiredSqft
+                        ? `${opportunity.spaceRequiredSqft.toLocaleString()} sq ft`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                    trailing={
+                      <div className="flex items-center gap-2">
+                        <Pill tone={opportunity.status === "available" ? "green" : "neutral"}>
+                          {FRANCHISE_STATUS_LABEL[opportunity.status] ?? opportunity.status}
+                        </Pill>
+                        <ActionForm
+                          action={deleteFranchiseOpportunity}
+                          submitLabel="Remove"
+                          pendingLabel="…"
+                          successMessage="Removed."
+                          hiddenFields={{ id: opportunity.id }}
+                          size="sm"
+                          variant="secondary"
+                          layout="inline"
+                        />
+                      </div>
+                    }
+                  />
+                );
+              })}
+            </div>
+          )}
+
+          <div className="mt-5 border-t border-[var(--border)] pt-5">
+            <p className="mb-3 text-[11px] uppercase tracking-[0.14em] text-[var(--muted)]">
+              Add a franchise opportunity
+            </p>
+            <ActionForm
+              action={saveFranchiseOpportunity}
+              submitLabel="Add opportunity"
+              pendingLabel="Adding…"
+              successMessage="Opportunity added."
+              hiddenFields={{ organizationId: org.id }}
+              size="sm"
+            >
+              <Field label="Title" className="sm:col-span-2">
+                <Input name="title" required placeholder="e.g. Central London flagship" />
+              </Field>
+              <Field label="City">
+                <Input name="city" required />
+              </Field>
+              <Field label="Country">
+                <Input name="country" />
+              </Field>
+              <Field label="Territory" hint="Optional — exclusivity area">
+                <Input name="territory" placeholder="e.g. Greater London" />
+              </Field>
+              <Field label="Status">
+                <Select name="status" defaultValue="available">
+                  {Object.entries(FRANCHISE_STATUS_LABEL).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Investment from">
+                <Input name="investmentMin" type="number" />
+              </Field>
+              <Field label="Investment to">
+                <Input name="investmentMax" type="number" />
+              </Field>
+              <Field label="Space required (sq ft)">
+                <Input name="spaceRequiredSqft" type="number" />
+              </Field>
+              <Field label="Description" className="sm:col-span-2">
+                <Textarea name="description" rows={3} />
+              </Field>
+            </ActionForm>
+          </div>
+        </Panel>
+      )}
 
       <Panel title="Documents" className="mt-6">
         <div className="space-y-2">

@@ -18,6 +18,42 @@ export type PortalGuide = {
 };
 
 export const PORTAL_GUIDE: Partial<Record<OrgType, PortalGuide>> = {
+  franchisee: {
+    headline: "Franchise development & sales",
+    intro:
+      "Connectors helps brands transform into scalable franchise businesses — we design, structure, market and sell franchise opportunities to qualified franchise investors and operators. Submit a request with your budget, territory and experience, and our team will match you against opportunities that actually fit.",
+    services: {
+      title: "Our franchise services",
+      items: [
+        "Franchise model development",
+        "Franchise business structuring",
+        "Franchise documentation",
+        "Franchise operations systems",
+        "Franchise sales",
+        "Franchise lead generation",
+        "Franchise matchmaking",
+        "Franchise territory management",
+        "Franchise marketing campaigns",
+        "Franchise investor presentations",
+        "Franchise onboarding",
+      ],
+    },
+    audience: {
+      title: "Sectors we franchise in",
+      items: [
+        "Restaurants",
+        "Cafes",
+        "Fashion brands",
+        "Beauty brands",
+        "Electronics retailers",
+        "Fitness brands",
+        "Convenience stores",
+        "Luxury brands",
+        "Lifestyle retailers",
+        "International franchises",
+      ],
+    },
+  },
   brand: {
     headline: "Brand expansion & location services",
     intro:

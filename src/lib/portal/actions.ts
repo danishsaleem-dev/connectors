@@ -10,6 +10,7 @@ import {
   brandProfiles,
   developerProfiles,
   documents,
+  franchiseOpportunities,
   franchiseeProfiles,
   investorProfiles,
   landlordProfiles,
@@ -350,6 +351,61 @@ export async function deleteProperty(
     return { ok: true };
   } catch (err) {
     return fail("deleteProperty", err, "Couldn't remove that property.");
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Franchise opportunities (what a brand is offering, and where)      */
+/* ------------------------------------------------------------------ */
+
+export async function saveFranchiseOpportunity(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdminUser();
+    const organizationId = str(formData, "organizationId");
+    const title = str(formData, "title");
+    const city = str(formData, "city");
+    if (!organizationId) return { ok: false, error: "No brand to attach this to." };
+    if (!title || !city) return { ok: false, error: "Enter a title and city." };
+
+    await getDb().insert(franchiseOpportunities).values({
+      organizationId,
+      title,
+      city,
+      country: str(formData, "country"),
+      territory: str(formData, "territory"),
+      investmentMin: num(formData, "investmentMin"),
+      investmentMax: num(formData, "investmentMax"),
+      spaceRequiredSqft: num(formData, "spaceRequiredSqft"),
+      status: (str(formData, "status") ??
+        "available") as (typeof franchiseOpportunities.$inferInsert)["status"],
+      description: str(formData, "description"),
+    });
+
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("saveFranchiseOpportunity", err, "Couldn't save that opportunity.");
+  }
+}
+
+export async function deleteFranchiseOpportunity(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdminUser();
+    const id = str(formData, "id");
+    if (!id) return { ok: false, error: "Missing opportunity." };
+
+    await getDb().delete(franchiseOpportunities).where(eq(franchiseOpportunities.id, id));
+
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("deleteFranchiseOpportunity", err, "Couldn't remove that opportunity.");
   }
 }
 

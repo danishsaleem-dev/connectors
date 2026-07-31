@@ -15,6 +15,13 @@
       "when": 1785501278949,
       "tag": "0001_purple_blink",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785504715191,
+      "tag": "0002_huge_shard",
+      "breakpoints": true
     }
   ]
 }

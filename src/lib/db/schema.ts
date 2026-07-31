@@ -250,6 +250,38 @@ export const documents = pgTable("documents", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const franchiseStatusEnum = pgEnum("franchise_status", [
+  "available",
+  "reserved",
+  "awarded",
+  "withdrawn",
+]);
+
+/**
+ * Franchise opportunities a brand is offering — the franchise-side mirror of
+ * `properties`. Owned by a brand organization, managed by Connectors staff on
+ * that brand's page. Nothing links these to a franchisee: matchmaking happens
+ * outside the portal (see the schema note at the top), so this is a record of
+ * what's on offer and where, not a booking system.
+ */
+export const franchiseOpportunities = pgTable("franchise_opportunities", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: uuid("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  city: text("city").notNull(),
+  country: text("country"),
+  territory: text("territory"),
+  investmentMin: integer("investment_min"),
+  investmentMax: integer("investment_max"),
+  currency: varchar("currency", { length: 3 }).notNull().default("GBP"),
+  spaceRequiredSqft: integer("space_required_sqft"),
+  status: franchiseStatusEnum("status").notNull().default("available"),
+  description: text("description"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 /**
  * The media library's index — one row per uploaded file, independent of
  * whatever field ends up pointing at it (a brand's logoUrl, a property's
