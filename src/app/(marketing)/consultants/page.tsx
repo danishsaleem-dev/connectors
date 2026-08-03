@@ -143,7 +143,6 @@ export default async function ConsultantsPage() {
                     photoUrl={c.photoUrl}
                     expertise={c.expertise ?? []}
                     yearsExperience={c.yearsExperience}
-                    bio={c.bio}
                   />
                 </Reveal>
               ))}

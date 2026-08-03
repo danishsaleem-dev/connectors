@@ -181,6 +181,17 @@ export async function listPublishedConsultants() {
     .orderBy(asc(consultants.sortOrder), desc(consultants.createdAt));
 }
 
+/** Gated the same way as the listing — an unpublished (or not-yet-reviewed)
+ * consultant's page 404s rather than being reachable by guessing an id. */
+export async function getPublishedConsultantById(id: string) {
+  const [row] = await getDb()
+    .select()
+    .from(consultants)
+    .where(and(eq(consultants.id, id), eq(consultants.isPublished, true)))
+    .limit(1);
+  return row ?? null;
+}
+
 /** Left join, not inner — a consultant can be deleted (consultantId set null
  * by the FK) while the inquiry itself stays on record. */
 export async function listConsultantInquiries() {

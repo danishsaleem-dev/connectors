@@ -339,7 +339,7 @@ function SolutionsMenu() {
             href="/available-locations"
             className="group flex gap-4 rounded-2xl px-4 py-3 transition-colors hover:bg-violet-600/[0.05]"
           >
-            <span className="font-display text-sm text-violet-400">•</span>
+            <span className="font-display text-sm text-violet-400">08</span>
             <span>
               <span className="block text-sm font-medium group-hover:text-violet-600">
                 Available Locations
