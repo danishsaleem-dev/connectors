@@ -59,6 +59,10 @@ export type ConsultantTestimonial = {
   quote: string;
   role: string;
   company: string;
+  /** A YouTube/Vimeo link or a direct video file URL, shown beside the quote.
+   * Null renders a "video coming soon" placeholder rather than a dead player,
+   * so the section is presentable before any footage exists. */
+  videoUrl: string | null;
 };
 
 export const consultantTestimonials: ConsultantTestimonial[] = [
@@ -67,17 +71,24 @@ export const consultantTestimonials: ConsultantTestimonial[] = [
       "The feasibility study talked us out of a location we were fairly set on — and into one that's now our best-performing site. (placeholder)",
     role: "Founder",
     company: "Northline Coffee (placeholder)",
+    videoUrl: null,
   },
   {
     quote:
       "We'd never franchised before. Having someone structure the agreement and the territory model before we sold the first unit saved us from mistakes we'd have made blind. (placeholder)",
     role: "Managing Director",
     company: "Verona Kitchens (placeholder)",
+    videoUrl: null,
   },
   {
     quote:
       "Straightforward, specific advice — no generic playbook. They knew our category. (placeholder)",
     role: "Asset Manager",
     company: "Meridian Retail Properties (placeholder)",
+    videoUrl: null,
   },
 ];
+
+/** Plays beside the FAQ block — an overview of how the consultancy works.
+ * Same rule as the testimonial videos: null until there's real footage. */
+export const consultancyVideoUrl: string | null = null;

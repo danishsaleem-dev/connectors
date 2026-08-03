@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
-import { Quote } from "lucide-react";
 import { ConsultantCard } from "@/components/ConsultantCard";
 import { CtaSection } from "@/components/CtaSection";
+import { FaqList } from "@/components/Faq";
 import { Photo } from "@/components/Photo";
 import { Reveal } from "@/components/Reveal";
-import { AudienceFaq } from "@/components/audience/AudienceFaq";
+import { TestimonialSlider } from "@/components/TestimonialSlider";
+import { VideoEmbed } from "@/components/VideoEmbed";
 import { ButtonLink, Eyebrow, Section } from "@/components/ui";
 import { listPublishedConsultants } from "@/lib/db/queries";
 import {
+  consultancyVideoUrl,
   consultantFaqs,
   consultantTestimonials,
   consultingAudiences,
@@ -16,9 +18,9 @@ import { photos } from "@/lib/images";
 import { resolveMediaUrl } from "@/lib/storage/media";
 
 export const metadata: Metadata = {
-  title: "Consultants",
+  title: "Best Business & Franchise Consultants",
   description:
-    "Hire a Connectors consultant for site selection, franchise structuring and expansion planning — for brands, franchisees and landlords.",
+    "Work with the best consultants for site selection, feasibility and franchise structuring — expansion advice for brands, franchisees and landlords.",
 };
 
 export default async function ConsultantsPage() {
@@ -161,26 +163,31 @@ export default async function ConsultantsPage() {
             Advice people actually acted on.
           </h2>
         </Reveal>
-
-        <div className="mt-12 grid gap-6 lg:grid-cols-3">
-          {consultantTestimonials.map((t, i) => (
-            <Reveal key={t.company} i={i}>
-              <figure className="flex h-full flex-col rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-7">
-                <Quote size={22} className="text-violet-400/60" aria-hidden="true" />
-                <blockquote className="mt-4 flex-1 text-[15px] leading-relaxed text-[var(--foreground)] text-pretty">
-                  “{t.quote}”
-                </blockquote>
-                <figcaption className="mt-6 border-t border-[var(--border)] pt-4 text-sm">
-                  <span className="block font-medium">{t.role}</span>
-                  <span className="text-[var(--muted)]">{t.company}</span>
-                </figcaption>
-              </figure>
-            </Reveal>
-          ))}
-        </div>
+        <Reveal i={2} className="mt-12">
+          <TestimonialSlider items={consultantTestimonials} />
+        </Reveal>
       </Section>
 
-      <AudienceFaq title="Before you get in touch." items={consultantFaqs} />
+      <Section tone="sunken">
+        <div className="grid gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
+          <Reveal>
+            <VideoEmbed url={consultancyVideoUrl} title="How our consultancy works" />
+          </Reveal>
+          <div>
+            <Reveal>
+              <Eyebrow>Questions</Eyebrow>
+            </Reveal>
+            <Reveal i={1}>
+              <h2 className="font-display display-lg mt-4 text-balance">
+                Before you get in touch.
+              </h2>
+            </Reveal>
+            <Reveal i={2} className="mt-8">
+              <FaqList items={consultantFaqs} />
+            </Reveal>
+          </div>
+        </div>
+      </Section>
 
       <CtaSection
         eyebrow="Hire a consultant"
