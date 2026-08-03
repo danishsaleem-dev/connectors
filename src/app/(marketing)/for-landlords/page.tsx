@@ -5,6 +5,7 @@ import { AudienceFaq } from "@/components/audience/AudienceFaq";
 import { AudienceGallery } from "@/components/audience/AudienceGallery";
 import { AudienceHero } from "@/components/audience/AudienceHero";
 import { LandlordEnquiryForm } from "@/components/forms/LandlordEnquiryForm";
+import { GatedForm } from "@/components/GatedForm";
 import { VendorCta } from "@/components/VendorCta";
 import { IndustriesMarquee } from "@/components/IndustriesMarquee";
 import { Reveal } from "@/components/Reveal";
@@ -74,7 +75,9 @@ export default function ForLandlordsPage() {
           </Reveal>
 
           <Reveal i={3} className="mt-10">
-            <LandlordEnquiryForm />
+            <GatedForm>
+              <LandlordEnquiryForm />
+            </GatedForm>
           </Reveal>
         </div>
       </Section>

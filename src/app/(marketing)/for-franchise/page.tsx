@@ -5,6 +5,7 @@ import { AudienceGallery } from "@/components/audience/AudienceGallery";
 import { AudienceHero } from "@/components/audience/AudienceHero";
 import { FaqVideoSection } from "@/components/FaqVideoSection";
 import { FranchiseEnquiryForm } from "@/components/forms/FranchiseEnquiryForm";
+import { GatedForm } from "@/components/GatedForm";
 import { FranchisingBrandsSection } from "@/components/FranchisingBrandsSection";
 import { TestimonialSection } from "@/components/TestimonialSection";
 import { VendorCta } from "@/components/VendorCta";
@@ -95,7 +96,9 @@ export default async function ForFranchisePage({
           </Reveal>
 
           <Reveal i={3} className="mt-10">
-            <FranchiseEnquiryForm />
+            <GatedForm>
+              <FranchiseEnquiryForm />
+            </GatedForm>
           </Reveal>
         </div>
       </Section>

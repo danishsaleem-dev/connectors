@@ -5,6 +5,7 @@ import { AudienceFaq } from "@/components/audience/AudienceFaq";
 import { AudienceGallery } from "@/components/audience/AudienceGallery";
 import { AudienceHero } from "@/components/audience/AudienceHero";
 import { BrandEnquiryForm } from "@/components/forms/BrandEnquiryForm";
+import { GatedForm } from "@/components/GatedForm";
 import { VendorCta } from "@/components/VendorCta";
 import { IndustriesMarquee } from "@/components/IndustriesMarquee";
 import { Reveal } from "@/components/Reveal";
@@ -75,7 +76,9 @@ export default function ForBrandsPage() {
           </Reveal>
 
           <Reveal i={3} className="mt-10">
-            <BrandEnquiryForm />
+            <GatedForm>
+              <BrandEnquiryForm />
+            </GatedForm>
           </Reveal>
         </div>
       </Section>

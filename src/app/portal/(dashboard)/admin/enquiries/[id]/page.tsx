@@ -4,7 +4,7 @@ import { clsx } from "clsx";
 import { eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth/current-user";
 import { getDb } from "@/lib/db/client";
-import { enquiries } from "@/lib/db/schema";
+import { enquiries, organizations } from "@/lib/db/schema";
 import { ActionForm } from "@/components/portal/ActionForm";
 import { PortalHeader } from "@/components/portal/PortalHeader";
 import { DetailList, Panel, Pill } from "@/components/portal/ui";
@@ -29,6 +29,16 @@ export default async function AdminEnquiryDetailPage({
 
   const meta = orgTypeMeta(enquiry.source);
 
+  const submitter = enquiry.submittedByOrganizationId
+    ? (
+        await getDb()
+          .select({ id: organizations.id, name: organizations.name, type: organizations.type })
+          .from(organizations)
+          .where(eq(organizations.id, enquiry.submittedByOrganizationId))
+          .limit(1)
+      )[0]
+    : null;
+
   return (
     <div>
       <PortalHeader
@@ -45,6 +55,19 @@ export default async function AdminEnquiryDetailPage({
               { label: "Phone", value: enquiry.phone },
               { label: "Company", value: enquiry.companyName },
               { label: "Type", value: meta.singular },
+              {
+                label: "Submitted by",
+                value: submitter ? (
+                  <a
+                    href={`/portal/admin/${orgTypeMeta(submitter.type).slug}/${submitter.id}`}
+                    className="text-violet-600 underline underline-offset-4"
+                  >
+                    {submitter.name} (signed in) →
+                  </a>
+                ) : (
+                  "Not signed in"
+                ),
+              },
             ]}
           />
 

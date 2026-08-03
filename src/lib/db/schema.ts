@@ -516,6 +516,14 @@ export const enquiries = pgTable("enquiries", {
   convertedOrgId: uuid("converted_org_id").references(() => organizations.id, {
     onDelete: "set null",
   }),
+  /** Set automatically (see recordEnquiry) when the visitor was signed into
+   * a portal account at submission time — distinct from convertedOrgId,
+   * which only appears after an admin manually converts an unlinked
+   * enquiry into a new organization. */
+  submittedByOrganizationId: uuid("submitted_by_organization_id").references(
+    () => organizations.id,
+    { onDelete: "set null" },
+  ),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 

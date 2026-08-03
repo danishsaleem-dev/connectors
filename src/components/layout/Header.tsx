@@ -125,6 +125,9 @@ export function Header() {
           <NavLink href="/consultants" active={pathname.startsWith("/consultants")}>
             Consultants
           </NavLink>
+          <NavLink href="/vendor-services" active={pathname === "/vendor-services"}>
+            Vendor Services
+          </NavLink>
           <NavLink href="/app" active={pathname === "/app"}>
             App
           </NavLink>
@@ -210,6 +213,10 @@ export function Header() {
 
               <MobileGroup title="Consultants">
                 <MobileLink href="/consultants">Hire a consultant</MobileLink>
+              </MobileGroup>
+
+              <MobileGroup title="Vendor Services">
+                <MobileLink href="/vendor-services">Explore the services</MobileLink>
               </MobileGroup>
 
               <MobileGroup title="Partners Program">
