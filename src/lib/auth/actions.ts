@@ -15,7 +15,7 @@ import {
   vendorProfiles,
   type OrgType,
 } from "@/lib/db/schema";
-import { SELF_SERVICE_TYPES, slugify } from "@/lib/portal/domain";
+import { SELF_SERVICE_TYPES, VENDOR_DISCIPLINE_LABEL, slugify } from "@/lib/portal/domain";
 import { hashPassword, verifyPassword } from "./password";
 import { COOKIE_NAME, SESSION_TTL_SECONDS, createSessionToken } from "./session";
 
@@ -45,7 +45,12 @@ async function setSessionCookie(payload: {
 /** Creates the empty profile row matching the organization's type, so the
  * onboarding wizard always has a record to update rather than having to
  * branch on insert-vs-update. */
-async function createProfileFor(type: OrgType, organizationId: string, orgName: string) {
+async function createProfileFor(
+  type: OrgType,
+  organizationId: string,
+  orgName: string,
+  discipline?: string | null,
+) {
   const db = getDb();
   switch (type) {
     case "brand":
@@ -64,12 +69,16 @@ async function createProfileFor(type: OrgType, organizationId: string, orgName: 
       await db.insert(investorProfiles).values({ organizationId });
       break;
     case "vendor":
-      // Seed the slug from the org name so a self-signed-up vendor already
-      // has a valid public URL waiting the moment an admin publishes them —
-      // matches the admin-created path in portal/actions.ts.
+      // Discipline is captured at signup rather than left to onboarding —
+      // it's the one field that makes a new partner immediately placeable,
+      // which is the whole promise of the programme. Slug is seeded from
+      // the org name, matching the admin-created path in portal/actions.ts.
       await db.insert(vendorProfiles).values({
         organizationId,
         slug: `${slugify(orgName)}-${organizationId.slice(0, 6)}`,
+        ...(discipline
+          ? { discipline: discipline as (typeof vendorProfiles.$inferInsert)["discipline"] }
+          : {}),
       });
       break;
   }
@@ -115,6 +124,11 @@ export async function register(
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
+  const rawDiscipline = String(formData.get("discipline") ?? "").trim();
+  // Validated against the label map rather than trusted from the form — the
+  // column is an enum, so an unrecognised value would fail the insert.
+  const discipline =
+    type === "vendor" && VENDOR_DISCIPLINE_LABEL[rawDiscipline] ? rawDiscipline : null;
 
   if (!SELF_SERVICE_TYPES.includes(type)) {
     return { error: "Choose an account type." };
@@ -123,6 +137,7 @@ export async function register(
   if (name.length < 2) return { error: "Enter your name." };
   if (!isValidEmail(email)) return { error: "Enter a valid email address." };
   if (password.length < 8) return { error: "Use a password of at least 8 characters." };
+  if (type === "vendor" && !discipline) return { error: "Choose what you do." };
 
   let created;
   try {
@@ -135,7 +150,7 @@ export async function register(
       .values({ name: orgName, type })
       .returning();
 
-    await createProfileFor(type, org.id, orgName);
+    await createProfileFor(type, org.id, orgName, discipline);
 
     const passwordHash = await hashPassword(password);
     const [user] = await db

@@ -3,7 +3,8 @@
 import { useActionState, useState } from "react";
 import { clsx } from "clsx";
 import { register, type RegisterState } from "@/lib/auth/actions";
-import { Button, Field, Input } from "@/components/ui";
+import { Button, Field, Input, Select } from "@/components/ui";
+import { VENDOR_DISCIPLINE_LABEL } from "@/lib/portal/domain";
 import type { OrgType } from "@/lib/db/schema";
 
 const initialState: RegisterState = {};
@@ -54,6 +55,23 @@ export function RegisterForm({ lockedType }: { lockedType?: OrgType }) {
       <Field label={active.orgLabel}>
         <Input name="organizationName" required />
       </Field>
+
+      {/* Asked here rather than left to onboarding — discipline is what makes
+          a new partner placeable, so the roster is useful from signup. */}
+      {type === "vendor" && (
+        <Field label="What do you do?" hint="You can add specialties and cities next">
+          <Select name="discipline" required defaultValue="">
+            <option value="" disabled>
+              Choose your discipline…
+            </option>
+            {Object.entries(VENDOR_DISCIPLINE_LABEL).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      )}
       <Field label="Your name">
         <Input name="name" required autoComplete="name" />
       </Field>

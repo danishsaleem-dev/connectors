@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Handshake, ShieldCheck, Wallet } from "lucide-react";
 import { AudienceHero } from "@/components/audience/AudienceHero";
 import { RegisterForm } from "@/components/portal/RegisterForm";
 import { Reveal } from "@/components/Reveal";
@@ -12,6 +13,24 @@ export const metadata: Metadata = {
   description:
     "Create your Partners Program account — for designers, architects, interior specialists, agencies, consultants and contractors.",
 };
+
+const JOIN_ASSURANCES = [
+  {
+    icon: ShieldCheck,
+    title: "Private by default",
+    body: "Your profile is never published or browsable. Only the Connectors team sees it, and only to place you on real projects.",
+  },
+  {
+    icon: Wallet,
+    title: "No fee, no subscription",
+    body: "Free to join and free to stay on the bench. We're paid on the expansion deal, not by our partners.",
+  },
+  {
+    icon: Handshake,
+    title: "Briefed work, not cold leads",
+    body: "When we introduce you, the site, the scope and the timeline are already agreed with the brand.",
+  },
+];
 
 export default function BecomeAVendorPage() {
   return (
@@ -36,10 +55,10 @@ export default function BecomeAVendorPage() {
             </Reveal>
             <Reveal i={2}>
               <p className="mt-5 leading-relaxed text-[var(--muted)] text-pretty">
-                Your account and portal access are instant. Build your
-                profile there, and our team reviews it before it goes live
-                in the public directory — so every listed partner is one
-                brands can actually trust.
+                Your account and portal access are instant. Build your profile
+                there, and our team vets it before you join the bench we place
+                projects from. Nothing about you is ever published — the work
+                comes to you through us.
               </p>
             </Reveal>
             <Reveal i={3}>
@@ -68,37 +87,59 @@ export default function BecomeAVendorPage() {
       </Section>
 
       <Section id="request-form" tone="sunken">
-        <div className="mx-auto max-w-md">
-          <Reveal>
-            <Eyebrow>Create your account</Eyebrow>
-          </Reveal>
+        <div className="grid gap-12 lg:grid-cols-[1fr_1fr] lg:items-start lg:gap-20">
+          <div>
+            <Reveal>
+              <Eyebrow>Create your account</Eyebrow>
+            </Reveal>
+            <Reveal i={1}>
+              <h2 className="font-display display-lg mt-4 text-balance">
+                Join the Partners Program.
+              </h2>
+            </Reveal>
+            <Reveal i={2}>
+              <p className="mt-5 max-w-md leading-relaxed text-[var(--muted)] text-pretty">
+                One minute to join. Tell us your discipline now and our team
+                can start placing you against live projects straight away.
+              </p>
+            </Reveal>
+
+            {/* The three things a vendor actually wants to know before
+                handing over their details, answered next to the form
+                rather than buried further up the page. */}
+            <div className="mt-10 space-y-6">
+              {JOIN_ASSURANCES.map((item, i) => (
+                <Reveal key={item.title} i={i + 3}>
+                  <div className="flex gap-4">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
+                      <item.icon size={18} />
+                    </span>
+                    <div>
+                      <p className="font-medium">{item.title}</p>
+                      <p className="mt-1 text-sm leading-relaxed text-[var(--muted)] text-pretty">
+                        {item.body}
+                      </p>
+                    </div>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+
           <Reveal i={1}>
-            <h2 className="font-display display-lg mt-4 text-balance">
-              Join the Partners Program.
-            </h2>
-          </Reveal>
-          <Reveal i={2}>
-            <p className="mt-5 leading-relaxed text-[var(--muted)] text-pretty">
-              No fee to join, no charge to be listed. Set your password now
-              and move straight into building your profile.
-            </p>
-          </Reveal>
-
-          <Reveal i={3} className="mt-10">
-            <RegisterForm lockedType="vendor" />
-          </Reveal>
-
-          <Reveal i={4}>
-            <p className="mt-6 text-center text-sm text-[var(--muted)]">
-              Already have an account?{" "}
-              <Link
-                href="?auth=login"
-                scroll={false}
-                className="text-violet-600 underline underline-offset-4"
-              >
-                Sign in
-              </Link>
-            </p>
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8">
+              <RegisterForm lockedType="vendor" />
+              <p className="mt-6 text-center text-sm text-[var(--muted)]">
+                Already have an account?{" "}
+                <Link
+                  href="?auth=login"
+                  scroll={false}
+                  className="text-violet-600 underline underline-offset-4"
+                >
+                  Sign in
+                </Link>
+              </p>
+            </div>
           </Reveal>
         </div>
       </Section>

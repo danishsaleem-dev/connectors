@@ -78,8 +78,9 @@ export const ORG_TYPES: OrgTypeMeta[] = [
     slug: "vendors",
     singular: "Vendor",
     plural: "Vendors & Partners",
-    // A vendor's portal job is keeping its own public directory profile
-    // current — it doesn't submit requests or list space.
+    // A vendor's portal job is keeping its own profile current so our team
+    // can place it — the profile is never published publicly. It doesn't
+    // submit requests or list space.
     requestTypes: [],
     listsProperties: false,
     browsesProperties: false,
@@ -95,9 +96,9 @@ export function orgTypeBySlug(slug: string): OrgTypeMeta | undefined {
 }
 
 /** Types a visitor can self-register as. Every org type is now offered on
- * the signup picker, including investor and vendor — a vendor's directory
- * listing itself still stays gated behind `isPublished`, so a self-signup
- * account doesn't reach the public directory until reviewed. */
+ * the signup picker, including investor and vendor — a vendor still can't be
+ * placed on projects until an admin vets them (the `isPublished` flag, which
+ * means "vetted", not "public": partner profiles are never published). */
 export const SELF_SERVICE_TYPES: OrgType[] = [
   "brand",
   "franchisee",
@@ -107,9 +108,10 @@ export const SELF_SERVICE_TYPES: OrgType[] = [
   "vendor",
 ];
 
-/** URL-safe slug for a vendor's public directory profile. Lives here rather
- * than in actions.ts because that file's top-level "use server" would turn a
- * plain helper into a callable server action. */
+/** URL-safe handle, used for consultant profile URLs and as a vendor's
+ * internal reference. Lives here rather than in actions.ts because that
+ * file's top-level "use server" would turn a plain helper into a callable
+ * server action. */
 export function slugify(value: string) {
   return value
     .normalize("NFKD")

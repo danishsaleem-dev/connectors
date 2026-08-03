@@ -236,7 +236,7 @@ export function ProfileFields({
             ))}
           </Select>
         </Field>
-        <Field label="Directory URL" hint="Reserved for the public directory — not yet linked from the site">
+        <Field label="Reference handle" hint="Internal identifier — partner profiles aren't published">
           <Input name="slug" defaultValue={text(profile, "slug")} placeholder="studio-name" />
         </Field>
         <Field
@@ -294,7 +294,7 @@ export function ProfileFields({
           <Checkbox
             name="isPublished"
             defaultChecked={checked(profile, "isPublished")}
-            label="Publish to the public consultants directory"
+            label="Vetted — available to place on projects"
           />
         </div>
       </>

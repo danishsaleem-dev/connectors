@@ -92,7 +92,7 @@ export default function VendorServicesPage() {
 
       <VendorCta
         title="Are you a vendor? Join the Connectors community."
-        body="No fee to join, no charge to be listed. We introduce our partners with the brief already in hand, across every discipline on this page."
+        body="No fee to join, no subscription to stay. We introduce our partners with the brief already in hand, across every discipline on this page."
       />
     </>
   );

@@ -20,8 +20,8 @@ export const partnerBenefits: PartnerBenefit[] = [
     body: "You hear from us when a brand we're already placing needs your discipline — with the site, the scope and the timeline already established.",
   },
   {
-    title: "A public profile that sells for you",
-    body: "A directory listing brands actually browse when they're choosing who designs, builds or fits out their next opening.",
+    title: "Private, not a public listing",
+    body: "Your profile is only ever seen by the Connectors team. No public directory, no competitors reading your work, no cold outreach off the back of it.",
   },
   {
     title: "Work across three markets",
@@ -32,8 +32,8 @@ export const partnerBenefits: PartnerBenefit[] = [
     body: "A brand that opens ten units doesn't re-tender ten times. Deliver the first well and the rollout tends to follow.",
   },
   {
-    title: "Paid on the project, not for the listing",
-    body: "There's no fee to join and no charge to appear in the directory. We make our money on the expansion deal, not on our partners.",
+    title: "Paid on the project, never for access",
+    body: "There's no fee to join and no subscription to stay on the bench. We make our money on the expansion deal, not on our partners.",
   },
   {
     title: "One point of contact",
@@ -56,17 +56,17 @@ export const partnerSteps: PartnerStep[] = [
   {
     step: "02",
     title: "Build your profile",
-    body: "Discipline, specialties, cities served, experience — the details that let a brand judge the fit before they call.",
+    body: "Discipline, specialties, cities served, experience — the details our team needs to know exactly which projects you're right for.",
   },
   {
     step: "03",
-    title: "We publish you",
-    body: "Our team reviews the profile against what our brands are actually asking for, then publishes it to the public directory.",
+    title: "We vet you",
+    body: "We review your work against what our brands are actually asking for. Approved partners join the bench our team places projects from — it's never published or browsable.",
   },
   {
     step: "04",
-    title: "Get matched",
-    body: "When a brand needs your discipline in your market, we introduce you with the brief already in hand.",
+    title: "We connect you",
+    body: "When a brand needs your discipline in your market, we make the introduction ourselves — with the site, the scope and the timeline already agreed.",
   },
 ];
 
