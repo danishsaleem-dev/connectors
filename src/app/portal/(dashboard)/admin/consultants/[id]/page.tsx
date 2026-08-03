@@ -35,6 +35,10 @@ export default async function AdminConsultantDetailPage({
   if (!consultant) notFound();
 
   const photoUrl = await resolveMediaUrl(consultant.photoUrl);
+  const [experienceFileUrls, educationFileUrls] = await Promise.all([
+    Promise.all((consultant.experience ?? []).map((e) => resolveMediaUrl(e.attachment))),
+    Promise.all((consultant.education ?? []).map((e) => resolveMediaUrl(e.attachment))),
+  ]);
 
   return (
     <div>
@@ -79,8 +83,10 @@ export default async function AdminConsultantDetailPage({
                 { key: "yearFrom", label: "From", placeholder: "2019" },
                 { key: "yearTo", label: "To", placeholder: "2022 or Present" },
                 { key: "description", label: "Description", type: "textarea", span: 2 },
+                { key: "attachment", label: "Supporting document", type: "file", span: 2 },
               ]}
               initial={consultant.experience ?? []}
+              existingFileUrls={experienceFileUrls}
             />
           </div>
 
@@ -93,8 +99,10 @@ export default async function AdminConsultantDetailPage({
                 { key: "title", label: "Title", placeholder: "e.g. MBA, Franchise Management" },
                 { key: "year", label: "Year", placeholder: "2018" },
                 { key: "description", label: "Description", type: "textarea", span: 2 },
+                { key: "attachment", label: "Supporting document", type: "file", span: 2 },
               ]}
               initial={consultant.education ?? []}
+              existingFileUrls={educationFileUrls}
             />
           </div>
 

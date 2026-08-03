@@ -370,12 +370,16 @@ export type ConsultantExperience = {
   yearFrom: string;
   yearTo: string;
   description: string;
+  /** Storage path for an optional supporting doc/image — resolved to a
+   * signed URL at render time, same as photoUrl. */
+  attachment?: string;
 };
 
 export type ConsultantEducation = {
   title: string;
   year: string;
   description: string;
+  attachment?: string;
 };
 
 export const consultants = pgTable("consultants", {

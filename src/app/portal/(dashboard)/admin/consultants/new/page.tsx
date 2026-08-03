@@ -62,6 +62,7 @@ export default async function AdminConsultantNewPage() {
                 { key: "yearFrom", label: "From", placeholder: "2019" },
                 { key: "yearTo", label: "To", placeholder: "2022 or Present" },
                 { key: "description", label: "Description", type: "textarea", span: 2 },
+                { key: "attachment", label: "Supporting document", type: "file", span: 2 },
               ]}
             />
           </div>
@@ -75,6 +76,7 @@ export default async function AdminConsultantNewPage() {
                 { key: "title", label: "Title", placeholder: "e.g. MBA, Franchise Management" },
                 { key: "year", label: "Year", placeholder: "2018" },
                 { key: "description", label: "Description", type: "textarea", span: 2 },
+                { key: "attachment", label: "Supporting document", type: "file", span: 2 },
               ]}
             />
           </div>
