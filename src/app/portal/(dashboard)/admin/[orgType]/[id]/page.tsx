@@ -233,14 +233,8 @@ export default async function AdminOrgDetailPage({
                 <Field label="Size (sq ft)">
                   <Input name="sizeSqft" type="number" />
                 </Field>
-                <Field label="Floor level">
-                  <Input name="floorLevel" />
-                </Field>
-                <Field label="Rent per month">
-                  <Input name="rentAmount" type="number" />
-                </Field>
-                <Field label="Available from">
-                  <Input name="availableFrom" />
+                <Field label="Dimensions" hint="e.g. 40ft x 60ft">
+                  <Input name="dimensions" />
                 </Field>
                 <div className="flex items-end pb-2 sm:col-span-2">
                   <Checkbox name="parkingAvailable" label="Parking available" />

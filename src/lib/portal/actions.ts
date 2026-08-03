@@ -23,6 +23,8 @@ import {
   requests,
   users,
   vendorProfiles,
+  type ConsultantEducation,
+  type ConsultantExperience,
   type OrgType,
 } from "@/lib/db/schema";
 import { site } from "@/lib/site";
@@ -78,6 +80,22 @@ function list(formData: FormData, key: string) {
       .filter(Boolean);
   }
   return [];
+}
+
+/** Parses the JSON blob a RepeatableEntries hidden input posts (experience,
+ * education), dropping any entry left completely blank. */
+function jsonEntries<T extends Record<string, string>>(formData: FormData, key: string): T[] {
+  const raw = str(formData, key);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (e) => e && typeof e === "object" && Object.values(e).some((v) => String(v ?? "").trim()),
+    ) as T[];
+  } catch {
+    return [];
+  }
 }
 
 /** Revalidates everything under the portal in one call, so new pages don't
@@ -325,16 +343,21 @@ export async function saveProperty(
       latitude: float(formData, "latitude"),
       longitude: float(formData, "longitude"),
       sizeSqft: num(formData, "sizeSqft"),
-      floorLevel: str(formData, "floorLevel"),
+      dimensions: str(formData, "dimensions"),
       parkingAvailable: bool(formData, "parkingAvailable"),
-      rentAmount: num(formData, "rentAmount"),
-      rentPeriod: str(formData, "rentPeriod") ?? "month",
-      availableFrom: str(formData, "availableFrom"),
       status: (str(formData, "status") ??
         "available") as (typeof properties.$inferInsert)["status"],
       description: str(formData, "description"),
       photos: list(formData, "photos"),
       video: str(formData, "video"),
+      // Retired from every property form's UI, but a save shouldn't silently
+      // wipe historical data on records that still have it — only touch
+      // these columns when a form actually posts them.
+      ...(formData.has("floorLevel") ? { floorLevel: str(formData, "floorLevel") } : {}),
+      ...(formData.has("rentAmount")
+        ? { rentAmount: num(formData, "rentAmount"), rentPeriod: str(formData, "rentPeriod") ?? "month" }
+        : {}),
+      ...(formData.has("availableFrom") ? { availableFrom: str(formData, "availableFrom") } : {}),
     };
 
     const db = getDb();
@@ -466,6 +489,8 @@ export async function saveConsultant(
       expertise: list(formData, "expertise"),
       yearsExperience: num(formData, "yearsExperience"),
       bio: str(formData, "bio"),
+      experience: jsonEntries<ConsultantExperience>(formData, "experience"),
+      education: jsonEntries<ConsultantEducation>(formData, "education"),
       isPublished: bool(formData, "isPublished"),
       sortOrder: num(formData, "sortOrder") ?? 0,
     };

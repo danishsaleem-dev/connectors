@@ -225,6 +225,9 @@ export const properties = pgTable("properties", {
   latitude: doublePrecision("latitude"),
   longitude: doublePrecision("longitude"),
   sizeSqft: integer("size_sqft"),
+  /** Free-text, e.g. "40ft x 60ft" — dimensions vary too much in format to
+   * justify two separate numeric columns. */
+  dimensions: text("dimensions"),
   floorLevel: text("floor_level"),
   parkingAvailable: boolean("parking_available").notNull().default(false),
   rentAmount: integer("rent_amount"),
@@ -362,6 +365,19 @@ export const media = pgTable("media", {
  * external, self-onboarding designers/architects/contractors). No
  * organization owns a row here; admins manage the roster directly, and
  * isPublished gates what the public /consultants page shows. */
+export type ConsultantExperience = {
+  title: string;
+  yearFrom: string;
+  yearTo: string;
+  description: string;
+};
+
+export type ConsultantEducation = {
+  title: string;
+  year: string;
+  description: string;
+};
+
 export const consultants = pgTable("consultants", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
@@ -369,6 +385,11 @@ export const consultants = pgTable("consultants", {
   expertise: text("expertise").array(),
   yearsExperience: integer("years_experience"),
   bio: text("bio"),
+  /** Repeatable admin-entered groups, stored as JSON rather than child
+   * tables — always rendered as a whole with their consultant, never
+   * queried independently, so a join would add ceremony with no benefit. */
+  experience: jsonb("experience").$type<ConsultantExperience[]>(),
+  education: jsonb("education").$type<ConsultantEducation[]>(),
   isPublished: boolean("is_published").notNull().default(false),
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

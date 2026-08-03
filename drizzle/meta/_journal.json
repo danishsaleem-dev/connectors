@@ -43,6 +43,20 @@
       "when": 1785754922245,
       "tag": "0005_aberrant_blockbuster",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1785760757701,
+      "tag": "0006_purple_malcolm_colcord",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1785761083603,
+      "tag": "0007_mushy_magma",
+      "breakpoints": true
     }
   ]
 }

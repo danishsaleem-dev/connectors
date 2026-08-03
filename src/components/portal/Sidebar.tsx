@@ -40,7 +40,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/portal/admin/developers", label: "Malls & Developers", icon: Building },
   { href: "/portal/admin/investors", label: "Investors", icon: TrendingUp },
   { href: "/portal/admin/vendors", label: "Vendors & Partners", icon: Handshake },
-  { href: "/portal/admin/properties", label: "Properties", icon: MapPin },
+  { href: "/portal/admin/locations", label: "Locations", icon: MapPin },
   { href: "/portal/admin/consultants", label: "Consultants", icon: Briefcase },
   { href: "/portal/admin/consultants/inquiries", label: "Consultant Inquiries", icon: Mail },
   { href: "/portal/admin/requests", label: "Requests", icon: ClipboardList },

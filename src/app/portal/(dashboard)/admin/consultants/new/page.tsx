@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth/current-user";
 import { ActionForm } from "@/components/portal/ActionForm";
 import { MediaPicker } from "@/components/portal/MediaPicker";
 import { PortalHeader } from "@/components/portal/PortalHeader";
+import { RepeatableEntries } from "@/components/portal/RepeatableEntries";
 import { Panel } from "@/components/portal/ui";
 import { Checkbox, Field, Input, Textarea } from "@/components/ui";
 import { saveConsultant } from "@/lib/portal/actions";
@@ -50,6 +51,34 @@ export default async function AdminConsultantNewPage() {
           <Field label="Bio" className="sm:col-span-2">
             <Textarea name="bio" rows={4} />
           </Field>
+
+          <div className="sm:col-span-2">
+            <span className="mb-2 block text-[13px] font-medium">Experience</span>
+            <RepeatableEntries
+              name="experience"
+              addLabel="Add experience"
+              fields={[
+                { key: "title", label: "Title", placeholder: "e.g. Franchise Director" },
+                { key: "yearFrom", label: "From", placeholder: "2019" },
+                { key: "yearTo", label: "To", placeholder: "2022 or Present" },
+                { key: "description", label: "Description", type: "textarea", span: 2 },
+              ]}
+            />
+          </div>
+
+          <div className="sm:col-span-2">
+            <span className="mb-2 block text-[13px] font-medium">Degrees / certificates</span>
+            <RepeatableEntries
+              name="education"
+              addLabel="Add degree / certificate"
+              fields={[
+                { key: "title", label: "Title", placeholder: "e.g. MBA, Franchise Management" },
+                { key: "year", label: "Year", placeholder: "2018" },
+                { key: "description", label: "Description", type: "textarea", span: 2 },
+              ]}
+            />
+          </div>
+
           <Field label="Photo" className="sm:col-span-2">
             <MediaPicker name="photoUrl" organizationId={null} />
           </Field>

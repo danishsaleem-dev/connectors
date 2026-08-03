@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "./client";
 import {
   brandProfiles,
@@ -36,6 +36,18 @@ export async function getProfile(type: OrgType, organizationId: string) {
   return (row ?? null) as Record<string, unknown> | null;
 }
 
+/** Landlord/developer orgs a location can be assigned to — an "agent" is
+ * just a landlord-type account in this portal, not a separate entity, so
+ * one list covers both. Used for the owner picker on the admin location
+ * add/edit forms. */
+export async function listPropertyOwners() {
+  return getDb()
+    .select({ id: organizations.id, name: organizations.name, type: organizations.type })
+    .from(organizations)
+    .where(inArray(organizations.type, ["landlord", "developer"]))
+    .orderBy(organizations.name);
+}
+
 /**
  * Every listed property, across every landlord and developer. Used by the
  * admin properties view and — filtered to `status: "available"` at the call
@@ -52,6 +64,7 @@ export async function listAllProperties() {
       country: properties.country,
       area: properties.area,
       sizeSqft: properties.sizeSqft,
+      dimensions: properties.dimensions,
       floorLevel: properties.floorLevel,
       parkingAvailable: properties.parkingAvailable,
       status: properties.status,

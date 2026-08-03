@@ -9,7 +9,7 @@ import { AddressPicker } from "@/components/portal/AddressPicker";
 import { PortalHeader } from "@/components/portal/PortalHeader";
 import { PropertyMedia } from "@/components/portal/PropertyMedia";
 import { PropertyMediaFields } from "@/components/portal/PropertyMediaFields";
-import { EmptyState, Panel, Pill, formatMoney } from "@/components/portal/ui";
+import { EmptyState, Panel, Pill } from "@/components/portal/ui";
 import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui";
 import { deleteProperty, saveProperty } from "@/lib/portal/actions";
 import { PROPERTY_STATUS_LABEL, PROPERTY_TYPE_LABEL, orgTypeMeta } from "@/lib/portal/domain";
@@ -73,14 +73,8 @@ export default async function ParticipantPropertiesPage() {
           <Field label="Size (sq ft)">
             <Input name="sizeSqft" type="number" />
           </Field>
-          <Field label="Floor level" hint="e.g. Ground floor, 2nd floor">
-            <Input name="floorLevel" />
-          </Field>
-          <Field label="Rent per month">
-            <Input name="rentAmount" type="number" />
-          </Field>
-          <Field label="Available from" hint="e.g. Immediately, or a date">
-            <Input name="availableFrom" />
+          <Field label="Dimensions" hint="e.g. 40ft x 60ft">
+            <Input name="dimensions" />
           </Field>
           <div className="flex items-end pb-2 sm:col-span-2">
             <Checkbox name="parkingAvailable" label="Parking available" />
@@ -97,7 +91,6 @@ export default async function ParticipantPropertiesPage() {
           <EmptyState>No properties listed yet.</EmptyState>
         ) : (
           rows.map((property) => {
-            const rent = formatMoney(property.rentAmount, property.currency);
             return (
               <Panel key={property.id}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -117,10 +110,8 @@ export default async function ParticipantPropertiesPage() {
                         property.sizeSqft
                           ? `${property.sizeSqft.toLocaleString()} sq ft`
                           : null,
-                        property.floorLevel,
+                        property.dimensions,
                         property.parkingAvailable ? "Parking available" : null,
-                        rent ? `${rent}/mo` : null,
-                        property.availableFrom ? `from ${property.availableFrom}` : null,
                       ]
                         .filter(Boolean)
                         .join(" · ")}

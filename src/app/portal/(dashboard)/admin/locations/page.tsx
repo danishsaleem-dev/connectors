@@ -6,12 +6,12 @@ import { ActionForm } from "@/components/portal/ActionForm";
 import { ListToolbar, matchesQuery } from "@/components/portal/ListToolbar";
 import { PortalHeader } from "@/components/portal/PortalHeader";
 import { EmptyState, ListRow, formatMoney } from "@/components/portal/ui";
-import { Select } from "@/components/ui";
+import { ButtonLink, Select } from "@/components/ui";
 import { setPropertyStatus } from "@/lib/portal/actions";
-import { PROPERTY_STATUS_LABEL, PROPERTY_TYPE_LABEL, orgTypeMeta } from "@/lib/portal/domain";
+import { PROPERTY_STATUS_LABEL, PROPERTY_TYPE_LABEL } from "@/lib/portal/domain";
 
 export const metadata: Metadata = {
-  title: "Properties",
+  title: "Locations",
   robots: { index: false, follow: false },
 };
 
@@ -20,7 +20,7 @@ const STATUS_OPTIONS = Object.entries(PROPERTY_STATUS_LABEL).map(([value, label]
   label,
 }));
 
-export default async function AdminPropertiesPage({
+export default async function AdminLocationsPage({
   searchParams,
 }: {
   searchParams: Promise<{ q?: string; status?: string }>;
@@ -37,12 +37,17 @@ export default async function AdminPropertiesPage({
   return (
     <div>
       <PortalHeader
-        title="Properties"
-        subtitle="All space listed by landlords and developers."
+        title="Locations"
+        subtitle="All space listed by landlords and agents."
+        action={
+          <ButtonLink href="/portal/admin/locations/new" size="sm">
+            Add location
+          </ButtonLink>
+        }
       />
 
       <ListToolbar
-        action="/portal/admin/properties"
+        action="/portal/admin/locations"
         placeholder="Search by title, owner or city…"
         query={q}
         statusOptions={STATUS_OPTIONS}
@@ -51,20 +56,22 @@ export default async function AdminPropertiesPage({
 
       <div className="space-y-2">
         {allRows.length === 0 ? (
-          <EmptyState>No properties listed yet.</EmptyState>
+          <EmptyState>No locations listed yet.</EmptyState>
         ) : rows.length === 0 ? (
-          <EmptyState>No properties match that search.</EmptyState>
+          <EmptyState>No locations match that search.</EmptyState>
         ) : (
           rows.map((property) => {
             const rent = formatMoney(property.rentAmount, property.currency);
-            const orgHref = `/portal/admin/${orgTypeMeta(property.organizationType).slug}/${property.organizationId}`;
             return (
               <ListRow
                 key={property.id}
                 // trailing holds a <form>, so the row itself isn't the link —
                 // same reasoning as the accounts and org-type list pages.
                 title={
-                  <Link href={orgHref} className="hover:text-violet-600">
+                  <Link
+                    href={`/portal/admin/locations/${property.id}`}
+                    className="hover:text-violet-600"
+                  >
                     {property.title}
                   </Link>
                 }
@@ -73,6 +80,7 @@ export default async function AdminPropertiesPage({
                   property.city,
                   PROPERTY_TYPE_LABEL[property.propertyType] ?? property.propertyType,
                   property.sizeSqft ? `${property.sizeSqft.toLocaleString()} sq ft` : null,
+                  property.dimensions,
                   rent ? `${rent}/mo` : null,
                 ]
                   .filter(Boolean)
