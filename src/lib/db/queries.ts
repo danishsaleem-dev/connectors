@@ -9,8 +9,10 @@ import {
   franchiseeProfiles,
   investorProfiles,
   landlordProfiles,
+  notes,
   organizations,
   properties,
+  propertyFavorites,
   vendorProfiles,
   type OrgType,
 } from "./schema";
@@ -209,4 +211,61 @@ export async function listConsultantInquiries() {
     .from(consultantInquiries)
     .leftJoin(consultants, eq(consultantInquiries.consultantId, consultants.id))
     .orderBy(desc(consultantInquiries.createdAt));
+}
+
+/* ------------------------------------------------------------------ */
+/*  Favorites, notes — brand-side locations and the per-user scratchpad */
+/* ------------------------------------------------------------------ */
+
+export async function listFavoritePropertyIds(organizationId: string): Promise<Set<string>> {
+  const rows = await getDb()
+    .select({ propertyId: propertyFavorites.propertyId })
+    .from(propertyFavorites)
+    .where(eq(propertyFavorites.organizationId, organizationId));
+  return new Set(rows.map((r) => r.propertyId));
+}
+
+/** Every role gets this, admin included, which is why it's keyed on userId
+ * rather than organizationId — admin accounts have no organization. */
+export async function listNotes(userId: string) {
+  return getDb().select().from(notes).where(eq(notes.userId, userId)).orderBy(desc(notes.createdAt));
+}
+
+/* ------------------------------------------------------------------ */
+/*  Franchising brands — public listing on /for-franchise               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Brands that have flagged themselves as actively franchising, filtered to
+ * `status: "active"` organizations only — a brand mid-onboarding or
+ * suspended doesn't show up here, same reasoning as the isPublished gates
+ * elsewhere (consultants, vendors).
+ */
+export async function listFranchisingBrands(industry?: string) {
+  const rows = await getDb()
+    .select({
+      organizationId: organizations.id,
+      name: organizations.name,
+      country: organizations.country,
+      logoUrl: brandProfiles.logoUrl,
+      industry: brandProfiles.industry,
+      description: brandProfiles.description,
+      outletCount: brandProfiles.outletCount,
+      countriesPresent: brandProfiles.countriesPresent,
+      franchiseInvestmentMin: brandProfiles.franchiseInvestmentMin,
+      franchiseInvestmentMax: brandProfiles.franchiseInvestmentMax,
+      franchiseFee: brandProfiles.franchiseFee,
+      currency: brandProfiles.currency,
+    })
+    .from(brandProfiles)
+    .innerJoin(organizations, eq(brandProfiles.organizationId, organizations.id))
+    .where(
+      and(
+        eq(brandProfiles.isFranchising, true),
+        eq(organizations.status, "active"),
+        industry ? eq(brandProfiles.industry, industry) : undefined,
+      ),
+    )
+    .orderBy(organizations.name);
+  return rows;
 }

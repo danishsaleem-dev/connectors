@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
 import { AudienceAppPromo } from "@/components/audience/AudienceAppPromo";
 import { AudienceDivisions } from "@/components/audience/AudienceDivisions";
-import { AudienceFaq } from "@/components/audience/AudienceFaq";
 import { AudienceGallery } from "@/components/audience/AudienceGallery";
 import { AudienceHero } from "@/components/audience/AudienceHero";
+import { FaqVideoSection } from "@/components/FaqVideoSection";
 import { FranchiseEnquiryForm } from "@/components/forms/FranchiseEnquiryForm";
+import { FranchisingBrandsSection } from "@/components/FranchisingBrandsSection";
+import { TestimonialSection } from "@/components/TestimonialSection";
 import { VendorCta } from "@/components/VendorCta";
 import { IndustriesMarquee } from "@/components/IndustriesMarquee";
 import { Reveal } from "@/components/Reveal";
 import { Eyebrow, Section } from "@/components/ui";
-import { faqs } from "@/lib/content/faq";
+import { franchiseFaqs, franchiseTestimonials, franchiseVideoUrl } from "@/lib/content/franchise";
 import { photos } from "@/lib/images";
 import { audiences } from "@/lib/site";
 
@@ -21,7 +23,13 @@ export const metadata: Metadata = {
     "Find a franchise matched to your budget, territory and experience — with the training, systems and support to run it.",
 };
 
-export default function ForFranchisePage() {
+export default async function ForFranchisePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ industry?: string }>;
+}) {
+  const { industry } = await searchParams;
+
   return (
     <>
       <AudienceHero
@@ -35,6 +43,8 @@ export default function ForFranchisePage() {
         audience="for-franchise"
         title="Matched to your budget, territory and experience."
       />
+
+      <FranchisingBrandsSection industry={industry} />
 
       <AudienceGallery
         eyebrow="What you're stepping into"
@@ -53,7 +63,17 @@ export default function ForFranchisePage() {
 
       <VendorCta />
 
-      <AudienceFaq items={faqs} />
+      <TestimonialSection
+        heading="Franchisees who've already made the move."
+        items={franchiseTestimonials}
+      />
+
+      <FaqVideoSection
+        heading="Before you apply."
+        videoUrl={franchiseVideoUrl}
+        videoTitle="How franchising through Connectors works"
+        faqs={franchiseFaqs}
+      />
 
       <Section id="request-form" tone="sunken">
         <div className="mx-auto max-w-3xl">

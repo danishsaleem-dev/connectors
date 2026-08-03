@@ -1,4 +1,5 @@
 import type { Faq } from "@/lib/content/faq";
+import type { TestimonialWithVideo } from "@/components/TestimonialSlider";
 
 /**
  * Content for the public /consultants page — Connectors' own in-house
@@ -55,15 +56,7 @@ export const consultantFaqs: Faq[] = [
  * disclosure already established in src/lib/content/testimonials.ts. Replace
  * with real, permissioned quotes before this section goes live publicly.
  */
-export type ConsultantTestimonial = {
-  quote: string;
-  role: string;
-  company: string;
-  /** A YouTube/Vimeo link or a direct video file URL, shown beside the quote.
-   * Null renders a "video coming soon" placeholder rather than a dead player,
-   * so the section is presentable before any footage exists. */
-  videoUrl: string | null;
-};
+export type ConsultantTestimonial = TestimonialWithVideo;
 
 export const consultantTestimonials: ConsultantTestimonial[] = [
   {

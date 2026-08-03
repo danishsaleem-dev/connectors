@@ -5,13 +5,24 @@ import { clsx } from "clsx";
 import { AnimatePresence, motion } from "motion/react";
 import { ChevronLeft, ChevronRight, Quote } from "lucide-react";
 import { VideoEmbed } from "@/components/VideoEmbed";
-import type { ConsultantTestimonial } from "@/lib/content/consultants";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
+/** Defined here rather than in a page's content file — this slider is
+ * reused across pages (consultants, for-franchise, …), each with its own
+ * content module, so the shape it expects belongs with the component. */
+export type TestimonialWithVideo = {
+  quote: string;
+  role: string;
+  company: string;
+  /** A YouTube/Vimeo link or a direct video file URL. Null renders a
+   * "coming soon" placeholder via VideoEmbed rather than a dead player. */
+  videoUrl: string | null;
+};
+
 /** Quote on the left, that quote's video on the right — the two columns move
  * together, so the video always belongs to the testimonial being read. */
-export function TestimonialSlider({ items }: { items: ConsultantTestimonial[] }) {
+export function TestimonialSlider({ items }: { items: TestimonialWithVideo[] }) {
   const [index, setIndex] = useState(0);
   if (items.length === 0) return null;
 

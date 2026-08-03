@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import { ConsultantCard } from "@/components/ConsultantCard";
 import { CtaSection } from "@/components/CtaSection";
-import { FaqList } from "@/components/Faq";
+import { FaqVideoSection } from "@/components/FaqVideoSection";
 import { Photo } from "@/components/Photo";
 import { Reveal } from "@/components/Reveal";
-import { TestimonialSlider } from "@/components/TestimonialSlider";
-import { VideoEmbed } from "@/components/VideoEmbed";
+import { TestimonialSection } from "@/components/TestimonialSection";
 import { ButtonLink, Eyebrow, Section } from "@/components/ui";
 import { listPublishedConsultants } from "@/lib/db/queries";
 import {
@@ -153,40 +152,17 @@ export default async function ConsultantsPage() {
 
       {/* Testimonials — see consultantTestimonials for the placeholder
           disclosure; replace with real, permissioned quotes before launch. */}
-      <Section>
-        <Reveal>
-          <Eyebrow>What clients say</Eyebrow>
-        </Reveal>
-        <Reveal i={1}>
-          <h2 className="font-display display-lg mt-4 max-w-2xl text-balance">
-            Advice people actually acted on.
-          </h2>
-        </Reveal>
-        <Reveal i={2} className="mt-12">
-          <TestimonialSlider items={consultantTestimonials} />
-        </Reveal>
-      </Section>
+      <TestimonialSection
+        heading="Advice people actually acted on."
+        items={consultantTestimonials}
+      />
 
-      <Section tone="sunken">
-        <div className="grid gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
-          <Reveal>
-            <VideoEmbed url={consultancyVideoUrl} title="How our consultancy works" />
-          </Reveal>
-          <div>
-            <Reveal>
-              <Eyebrow>Questions</Eyebrow>
-            </Reveal>
-            <Reveal i={1}>
-              <h2 className="font-display display-lg mt-4 text-balance">
-                Before you get in touch.
-              </h2>
-            </Reveal>
-            <Reveal i={2} className="mt-8">
-              <FaqList items={consultantFaqs} />
-            </Reveal>
-          </div>
-        </div>
-      </Section>
+      <FaqVideoSection
+        heading="Before you get in touch."
+        videoUrl={consultancyVideoUrl}
+        videoTitle="How our consultancy works"
+        faqs={consultantFaqs}
+      />
 
       <CtaSection
         eyebrow="Hire a consultant"

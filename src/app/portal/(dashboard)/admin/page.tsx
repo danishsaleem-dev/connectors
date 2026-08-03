@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth/current-user";
 import { getDb } from "@/lib/db/client";
 import { enquiries, organizations, requests, users } from "@/lib/db/schema";
 import { PortalHeader } from "@/components/portal/PortalHeader";
+import { SavedNotes } from "@/components/portal/SavedNotes";
 import { EmptyState, ListRow, Panel, Pill, StatCard } from "@/components/portal/ui";
 import { ORG_TYPES, REQUEST_TYPE_LABEL, orgTypeMeta } from "@/lib/portal/domain";
 
@@ -121,6 +122,8 @@ export default async function AdminOverviewPage() {
           </div>
         )}
       </Panel>
+
+      <SavedNotes />
     </div>
   );
 }

@@ -18,8 +18,10 @@ import {
   landlordProfiles,
   media,
   messages,
+  notes,
   organizations,
   properties,
+  propertyFavorites,
   requests,
   users,
   vendorProfiles,
@@ -980,5 +982,88 @@ export async function postMessage(
     return { ok: true };
   } catch (err) {
     return fail("postMessage", err, "Couldn't send that message.");
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Favorites — the star icon on a brand's /portal/locations           */
+/* ------------------------------------------------------------------ */
+
+export async function toggleFavorite(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const user = await requireOrgUser();
+    const propertyId = str(formData, "propertyId");
+    if (!propertyId) return { ok: false, error: "Missing location." };
+
+    const [existing] = await getDb()
+      .select({ id: propertyFavorites.id })
+      .from(propertyFavorites)
+      .where(
+        and(
+          eq(propertyFavorites.organizationId, user.organizationId),
+          eq(propertyFavorites.propertyId, propertyId),
+        ),
+      )
+      .limit(1);
+
+    if (existing) {
+      await getDb().delete(propertyFavorites).where(eq(propertyFavorites.id, existing.id));
+    } else {
+      await getDb()
+        .insert(propertyFavorites)
+        .values({ organizationId: user.organizationId, propertyId });
+    }
+
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("toggleFavorite", err, "Couldn't update favorites.");
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Notes — the one feature every role gets, admin included            */
+/* ------------------------------------------------------------------ */
+
+export async function createNote(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return { ok: false, error: "Your session has expired — sign in again." };
+
+    const body = str(formData, "body");
+    if (!body) return { ok: false, error: "Write something first." };
+
+    await getDb().insert(notes).values({ userId: user.id, body });
+
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("createNote", err, "Couldn't save that note.");
+  }
+}
+
+export async function deleteNote(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return { ok: false, error: "Your session has expired — sign in again." };
+
+    const id = str(formData, "id");
+    if (!id) return { ok: false, error: "Missing note." };
+
+    await getDb().delete(notes).where(and(eq(notes.id, id), eq(notes.userId, user.id)));
+
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("deleteNote", err, "Couldn't remove that note.");
   }
 }

@@ -7,6 +7,7 @@ import { listAllProperties } from "@/lib/db/queries";
 import { documents, properties, requests } from "@/lib/db/schema";
 import { Check } from "lucide-react";
 import { PortalHeader } from "@/components/portal/PortalHeader";
+import { SavedNotes } from "@/components/portal/SavedNotes";
 import { Panel, StatCard } from "@/components/portal/ui";
 import { PORTAL_GUIDE } from "@/lib/content/portal-guide";
 import { orgTypeMeta } from "@/lib/portal/domain";
@@ -155,6 +156,8 @@ export default async function ParticipantDashboardPage() {
           </Panel>
         </>
       )}
+
+      <SavedNotes />
     </div>
   );
 }
