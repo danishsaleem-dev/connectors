@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { clsx } from "clsx";
-import { MapPin } from "lucide-react";
+import { ArrowUpRight, Maximize2, MapPin, Ruler } from "lucide-react";
 import { ActionForm } from "@/components/portal/ActionForm";
 import { Modal } from "@/components/Modal";
+import { Pill } from "@/components/portal/ui";
 import { ButtonLink } from "@/components/ui";
 import { createRequest } from "@/lib/portal/actions";
-import { PROPERTY_TYPE_LABEL } from "@/lib/portal/domain";
+import { PROPERTY_STATUS_LABEL, PROPERTY_TYPE_LABEL } from "@/lib/portal/domain";
 
 export type LocationCardData = {
   id: string;
@@ -15,6 +16,7 @@ export type LocationCardData = {
   city: string;
   country: string | null;
   area: string | null;
+  status: string;
   propertyType: string;
   sizeSqft: number | null;
   dimensions: string | null;
@@ -42,7 +44,7 @@ export function LocationCard({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] text-left transition-all hover:border-violet-400 hover:shadow-[0_28px_56px_-32px_rgba(20,20,26,0.35)]"
+        className="group flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] text-left transition-all hover:border-violet-400 hover:shadow-[0_28px_56px_-32px_rgba(20,20,26,0.35)]"
       >
         <div className="relative aspect-[4/3] overflow-hidden bg-[var(--surface-sunken)]">
           {cover ? (
@@ -51,8 +53,8 @@ export function LocationCard({
               src={cover}
               alt=""
               className={clsx(
-                "h-full w-full object-cover",
-                !viewerIsBrand && "scale-110 blur-md",
+                "h-full w-full object-cover transition-transform duration-700 group-hover:scale-105",
+                !viewerIsBrand && "scale-110 blur-md group-hover:scale-110",
               )}
             />
           ) : (
@@ -60,7 +62,16 @@ export function LocationCard({
               <MapPin size={28} />
             </div>
           )}
+          <div className="absolute left-3 top-3">
+            <Pill tone="green">{PROPERTY_STATUS_LABEL[location.status] ?? location.status}</Pill>
+          </div>
+          <div className="absolute right-3 top-3">
+            <span className="rounded-full bg-white/95 px-3 py-1 text-xs font-medium text-ink backdrop-blur-sm">
+              {PROPERTY_TYPE_LABEL[location.propertyType] ?? location.propertyType}
+            </span>
+          </div>
         </div>
+
         <div className="flex flex-1 flex-col p-5">
           <h3 className="font-display text-lg">
             {location.city}
@@ -69,6 +80,28 @@ export function LocationCard({
           {location.area && (
             <p className="mt-1 text-sm text-[var(--muted)]">{location.area}</p>
           )}
+
+          {(location.sizeSqft != null || location.dimensions) && (
+            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-[var(--border)] pt-4 text-sm text-[var(--muted)]">
+              {location.sizeSqft != null && (
+                <span className="inline-flex items-center gap-1.5">
+                  <Maximize2 size={14} className="text-violet-600" />
+                  {location.sizeSqft.toLocaleString()} sq ft
+                </span>
+              )}
+              {location.dimensions && (
+                <span className="inline-flex items-center gap-1.5">
+                  <Ruler size={14} className="text-violet-600" />
+                  {location.dimensions}
+                </span>
+              )}
+            </div>
+          )}
+
+          <span className="mt-auto flex items-center gap-1.5 pt-5 text-sm text-violet-600 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+            View details
+            <ArrowUpRight size={15} />
+          </span>
         </div>
       </button>
 
