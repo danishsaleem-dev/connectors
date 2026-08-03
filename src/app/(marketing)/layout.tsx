@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { ChatWidget } from "@/components/chat/ChatWidget";
+import { AuthModal } from "@/components/portal/AuthModal";
 
 export default function MarketingLayout({
   children,
@@ -22,6 +24,11 @@ export default function MarketingLayout({
       {/* Marketing only — the portal has a support route and shouldn't carry a
           visitor-facing help widget over its own UI. */}
       <ChatWidget />
+      {/* useSearchParams needs a Suspense boundary to avoid de-opting the
+          whole layout to client-only rendering. */}
+      <Suspense fallback={null}>
+        <AuthModal />
+      </Suspense>
     </SmoothScroll>
   );
 }

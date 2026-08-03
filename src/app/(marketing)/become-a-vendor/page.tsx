@@ -92,7 +92,8 @@ export default function BecomeAVendorPage() {
             <p className="mt-6 text-center text-sm text-[var(--muted)]">
               Already have an account?{" "}
               <Link
-                href="/portal/login"
+                href="?auth=login"
+                scroll={false}
                 className="text-violet-600 underline underline-offset-4"
               >
                 Sign in

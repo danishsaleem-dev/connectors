@@ -392,7 +392,7 @@ export const knowledge: KnowledgeEntry[] = [
       "sign up",
       "dashboard",
     ],
-    link: { href: "/portal/login", label: "Partner login" },
+    link: { href: "?auth=login", label: "Partner login" },
   },
 ];
 

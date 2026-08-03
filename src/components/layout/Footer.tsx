@@ -108,7 +108,7 @@ export function Footer() {
           </p>
           <div className="flex items-center gap-6">
             <p>{site.tagline}</p>
-            <Link href="/portal/login" className="transition-colors hover:text-white/70">
+            <Link href="?auth=login" scroll={false} className="transition-colors hover:text-white/70">
               Partner login
             </Link>
           </div>

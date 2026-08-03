@@ -106,7 +106,7 @@ export function Header() {
           />
 
           <NavLink href="/consultants" active={pathname.startsWith("/consultants")}>
-            Partners
+            Consultants
           </NavLink>
           <NavLink href="/app" active={pathname === "/app"}>
             App
@@ -124,7 +124,7 @@ export function Header() {
               source order, so `hidden` from a later-appended className
               doesn't reliably beat it. */}
           <div className="hidden items-center gap-2 md:flex">
-            <ButtonLink href="/portal/login" variant="ghost" size="sm" showIcon={false}>
+            <ButtonLink href="?auth=login" variant="ghost" size="sm" showIcon={false}>
               Join
             </ButtonLink>
             <ButtonLink href="/for-brands" size="sm">
@@ -187,8 +187,11 @@ export function Header() {
                 ))}
               </MobileGroup>
 
+              <MobileGroup title="Consultants">
+                <MobileLink href="/consultants">Hire a consultant</MobileLink>
+              </MobileGroup>
+
               <MobileGroup title="Partners Program">
-                <MobileLink href="/consultants">Consultants directory</MobileLink>
                 <MobileLink href="/partners">About the programme</MobileLink>
                 <MobileLink href="/become-a-vendor">Become a vendor</MobileLink>
               </MobileGroup>
@@ -207,7 +210,7 @@ export function Header() {
                   Start a conversation
                 </ButtonLink>
                 <ButtonLink
-                  href="/portal/login"
+                  href="?auth=login"
                   variant="secondary"
                   showIcon={false}
                   className="w-full"
