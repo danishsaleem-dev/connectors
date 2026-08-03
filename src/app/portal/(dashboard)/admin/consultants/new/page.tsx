@@ -47,9 +47,6 @@ export default async function AdminConsultantNewPage() {
           <Field label="Years of experience">
             <Input name="yearsExperience" type="number" min={0} />
           </Field>
-          <Field label="Display order" hint="Lower numbers show first">
-            <Input name="sortOrder" type="number" defaultValue={0} />
-          </Field>
           <Field label="Bio" className="sm:col-span-2">
             <Textarea name="bio" rows={4} />
           </Field>
