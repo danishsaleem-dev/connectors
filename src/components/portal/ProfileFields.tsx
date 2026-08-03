@@ -236,7 +236,7 @@ export function ProfileFields({
             ))}
           </Select>
         </Field>
-        <Field label="Directory URL" hint="Used for /consultants/<slug>">
+        <Field label="Directory URL" hint="Reserved for the public directory — not yet linked from the site">
           <Input name="slug" defaultValue={text(profile, "slug")} placeholder="studio-name" />
         </Field>
         <Field

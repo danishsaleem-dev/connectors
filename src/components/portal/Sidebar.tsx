@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { clsx } from "clsx";
 import {
+  Briefcase,
   Building,
   Building2,
   ChevronsLeft,
@@ -15,6 +16,7 @@ import {
   Inbox,
   LayoutDashboard,
   LogOut,
+  Mail,
   MapPin,
   MessageSquare,
   Store,
@@ -39,6 +41,8 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/portal/admin/investors", label: "Investors", icon: TrendingUp },
   { href: "/portal/admin/vendors", label: "Vendors & Partners", icon: Handshake },
   { href: "/portal/admin/properties", label: "Properties", icon: MapPin },
+  { href: "/portal/admin/consultants", label: "Consultants", icon: Briefcase },
+  { href: "/portal/admin/consultants/inquiries", label: "Consultant Inquiries", icon: Mail },
   { href: "/portal/admin/requests", label: "Requests", icon: ClipboardList },
   { href: "/portal/admin/media", label: "Media", icon: ImageIcon },
   { href: "/portal/admin/accounts", label: "Accounts", icon: UserPlus },

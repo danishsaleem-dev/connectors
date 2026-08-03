@@ -168,22 +168,19 @@ export default function PartnersPage() {
             </Reveal>
             <Reveal i={2}>
               <h2 className="font-display display-lg mt-4 text-balance">
-                See who’s on the bench.
+                Manage your profile from the portal.
               </h2>
             </Reveal>
             <Reveal i={3}>
               <p className="mt-5 leading-relaxed text-[var(--muted)] text-pretty">
-                Every published partner has a profile brands can browse by
-                discipline, city and specialty — the same directory our team
-                works from.
+                Every published partner has a profile our team works from —
+                discipline, city and specialty — kept current from your own
+                portal login.
               </p>
             </Reveal>
             <Reveal i={4}>
               <div className="mt-8 flex flex-wrap gap-3">
-                <ButtonLink href="/consultants" variant="secondary">
-                  Browse the directory
-                </ButtonLink>
-                <ButtonLink href="/portal/login" variant="ghost">
+                <ButtonLink href="?auth=login" variant="secondary">
                   Partner sign in <ArrowUpRight size={14} className="inline" />
                 </ButtonLink>
               </div>

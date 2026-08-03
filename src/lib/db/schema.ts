@@ -353,6 +353,47 @@ export const media = pgTable("media", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+/* ------------------------------------------------------------------ */
+/*  Consultants — Connectors' own in-house consultancy roster          */
+/* ------------------------------------------------------------------ */
+
+/** Connectors' own consultants, offered as a service to brands, franchisees
+ * and landlords — distinct from vendorProfiles (the Partners Program's
+ * external, self-onboarding designers/architects/contractors). No
+ * organization owns a row here; admins manage the roster directly, and
+ * isPublished gates what the public /consultants page shows. */
+export const consultants = pgTable("consultants", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  photoUrl: text("photo_url"),
+  expertise: text("expertise").array(),
+  yearsExperience: integer("years_experience"),
+  bio: text("bio"),
+  isPublished: boolean("is_published").notNull().default(false),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+/** Deliberately its own table, not folded into `enquiries` below — a
+ * consultant inquiry is about one specific consultant (no org-type concept
+ * applies) and never becomes a portal organization the way the four public
+ * enquiry forms can via convertEnquiry, so it doesn't share their lifecycle. */
+export const consultantInquiryStatusEnum = pgEnum("consultant_inquiry_status", [
+  "new",
+  "read",
+  "archived",
+]);
+
+export const consultantInquiries = pgTable("consultant_inquiries", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  consultantId: uuid("consultant_id").references(() => consultants.id, { onDelete: "set null" }),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  message: text("message").notNull(),
+  status: consultantInquiryStatusEnum("status").notNull().default("new"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const messages = pgTable("messages", {
   id: uuid("id").defaultRandom().primaryKey(),
   organizationId: uuid("organization_id")

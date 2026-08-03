@@ -1,8 +1,10 @@
 import "server-only";
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { getDb } from "./client";
 import {
   brandProfiles,
+  consultantInquiries,
+  consultants,
   developerProfiles,
   franchiseeProfiles,
   investorProfiles,
@@ -76,12 +78,18 @@ export async function listAllProperties() {
 /* ------------------------------------------------------------------ */
 
 /**
- * Published vendor profiles for the public /consultants directory.
+ * Published vendor profiles for the Partners Program directory.
  *
  * `isPublished` is the gate: a vendor onboards, fills in their profile, and
  * an admin publishes it. Nothing reaches the public site before that, so a
  * half-finished profile is never exposed. Rows without a slug are excluded
  * too — there'd be no URL to link them to.
+ *
+ * Not currently linked from any page — /consultants was repurposed to
+ * Connectors' own in-house consultancy service (see the `consultants` table
+ * and queries below), and this directory doesn't have a public URL of its
+ * own yet. Left in place rather than deleted since the vendor sign-up
+ * system (Become a Vendor, /partners) is unaffected and still live.
  */
 export async function listPublishedVendors(discipline?: string) {
   const rows = await getDb()
@@ -134,4 +142,47 @@ export async function getPublishedVendorBySlug(slug: string) {
     .where(and(eq(vendorProfiles.slug, slug), eq(vendorProfiles.isPublished, true)))
     .limit(1);
   return row ?? null;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Consultants — Connectors' own in-house consultancy roster          */
+/* ------------------------------------------------------------------ */
+
+/** Every consultant, published or not — used by the admin list page, which
+ * needs to show drafts so they can be finished and published. */
+export async function listAllConsultants() {
+  return getDb()
+    .select()
+    .from(consultants)
+    .orderBy(asc(consultants.sortOrder), desc(consultants.createdAt));
+}
+
+/** Published consultants for the public /consultants page. Same isPublished
+ * gate as vendors above — a freshly added consultant stays invisible until
+ * an admin reviews and publishes the profile. */
+export async function listPublishedConsultants() {
+  return getDb()
+    .select()
+    .from(consultants)
+    .where(eq(consultants.isPublished, true))
+    .orderBy(asc(consultants.sortOrder), desc(consultants.createdAt));
+}
+
+/** Left join, not inner — a consultant can be deleted (consultantId set null
+ * by the FK) while the inquiry itself stays on record. */
+export async function listConsultantInquiries() {
+  return getDb()
+    .select({
+      id: consultantInquiries.id,
+      consultantId: consultantInquiries.consultantId,
+      consultantName: consultants.name,
+      name: consultantInquiries.name,
+      email: consultantInquiries.email,
+      message: consultantInquiries.message,
+      status: consultantInquiries.status,
+      createdAt: consultantInquiries.createdAt,
+    })
+    .from(consultantInquiries)
+    .leftJoin(consultants, eq(consultantInquiries.consultantId, consultants.id))
+    .orderBy(desc(consultantInquiries.createdAt));
 }

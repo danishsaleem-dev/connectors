@@ -1,93 +1,148 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { clsx } from "clsx";
-import { ArrowUpRight, MapPin } from "lucide-react";
+import { Quote } from "lucide-react";
+import { ConsultantCard } from "@/components/ConsultantCard";
+import { CtaSection } from "@/components/CtaSection";
+import { Photo } from "@/components/Photo";
 import { Reveal } from "@/components/Reveal";
+import { AudienceFaq } from "@/components/audience/AudienceFaq";
 import { ButtonLink, Eyebrow, Section } from "@/components/ui";
-import { listPublishedVendors } from "@/lib/db/queries";
-import { partnerDisciplines } from "@/lib/content/partners";
-import { VENDOR_DISCIPLINE_LABEL, VENDOR_DISCIPLINE_PLURAL } from "@/lib/portal/domain";
+import { listPublishedConsultants } from "@/lib/db/queries";
+import {
+  consultantFaqs,
+  consultantTestimonials,
+  consultingAudiences,
+} from "@/lib/content/consultants";
+import { photos } from "@/lib/images";
 import { resolveMediaUrl } from "@/lib/storage/media";
 
 export const metadata: Metadata = {
-  title: "Consultants & Partners",
+  title: "Consultants",
   description:
-    "Browse the designers, architects, interior specialists, agencies, consultants and contractors in the Connectors Partners Program.",
+    "Hire a Connectors consultant for site selection, franchise structuring and expansion planning — for brands, franchisees and landlords.",
 };
 
-type VendorRow = Awaited<ReturnType<typeof listPublishedVendors>>[number];
-
-export default async function ConsultantsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ discipline?: string }>;
-}) {
-  const { discipline } = await searchParams;
-  const active = discipline && VENDOR_DISCIPLINE_LABEL[discipline] ? discipline : undefined;
-  const vendors = await listPublishedVendors(active);
+export default async function ConsultantsPage() {
+  const consultants = await listPublishedConsultants();
+  const withPhotos = await Promise.all(
+    consultants.map(async (c) => ({ ...c, photoUrl: await resolveMediaUrl(c.photoUrl) })),
+  );
 
   return (
     <>
-      {/* Header — text-only rather than the photo hero the audience pages use;
-          the cards below are the visual interest, and stacking a photo hero on
-          top of a photo grid fights itself. */}
-      <Section className="pt-32 md:pt-40">
-        <div className="max-w-3xl">
+      {/* Hero — the site's usual photo-backed audience header, but with two
+          real CTAs instead of one jump-link, since this page has two
+          equally-weighted entry points: talk to us now, or browse first. */}
+      <section className="relative isolate overflow-hidden">
+        <div className="relative flex min-h-[28rem] flex-col justify-end sm:min-h-[32rem]">
+          <div className="absolute inset-0">
+            <Photo
+              photo={photos.planning}
+              sizes="100vw"
+              aspect="none"
+              className="h-full"
+              priority
+              overlay="strong"
+            />
+          </div>
+          <div className="shell relative pb-10 pt-28 sm:pb-14 sm:pt-32">
+            <Reveal>
+              <Eyebrow className="text-white/55">Consultants</Eyebrow>
+            </Reveal>
+            <Reveal i={1}>
+              <h1 className="font-display display-lg mt-4 max-w-4xl text-balance text-white">
+                Expansion decisions are easier with the right advice in the room.
+              </h1>
+            </Reveal>
+            <Reveal i={2}>
+              <p className="mt-5 max-w-xl leading-relaxed text-white/70 text-pretty">
+                Site selection, feasibility and franchise structuring from
+                consultants who work these categories every day.
+              </p>
+            </Reveal>
+            <Reveal i={3}>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <ButtonLink href="/contact" variant="onDark" size="lg">
+                  Hire a Consultant
+                </ButtonLink>
+                <ButtonLink href="#listing" variant="outline" size="lg">
+                  View available consultants
+                </ButtonLink>
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
+      {/* What our consultants are for — Connectors' own service, not a
+          directory of outside vendors. */}
+      <Section>
+        <div className="max-w-2xl">
           <Reveal>
-            <Eyebrow>Partners Program</Eyebrow>
+            <Eyebrow>Consultancy, in-house</Eyebrow>
           </Reveal>
           <Reveal i={1}>
-            <h1 className="font-display display-xl mt-5 text-balance">
-              The bench behind every opening.
-            </h1>
+            <h2 className="font-display display-lg mt-4 text-balance">
+              Advice from the people who do this for a living.
+            </h2>
           </Reveal>
           <Reveal i={2}>
-            <p className="mt-6 text-lg leading-relaxed text-[var(--muted)] text-pretty">
-              Vetted designers, architects, interior specialists, agencies,
-              consultants and contractors — the people our brands work with
-              when a lease turns into a build.
+            <p className="mt-5 leading-relaxed text-[var(--muted)] text-pretty">
+              We provide consultancy services directly to brands, franchisees
+              and landlords — whether or not you're already working with
+              Connectors on an expansion, a franchise or a property.
             </p>
           </Reveal>
         </div>
 
-        {/* Discipline filter — plain links, so this page stays a Server
-            Component and every filter view is its own shareable URL. */}
-        <Reveal i={3}>
-          <div className="mt-10 flex flex-wrap gap-2">
-            <FilterChip href="/consultants" label="All" active={!active} />
-            {partnerDisciplines.map((d) => (
-              <FilterChip
-                key={d.key}
-                href={`/consultants?discipline=${d.key}`}
-                label={VENDOR_DISCIPLINE_PLURAL[d.key] ?? d.title}
-                active={active === d.key}
-              />
-            ))}
-          </div>
+        <div className="mt-12 grid gap-8 sm:grid-cols-3">
+          {consultingAudiences.map((a, i) => (
+            <Reveal key={a.audience} i={i}>
+              <div className="border-t border-[var(--border)] pt-5">
+                <h3 className="font-display text-lg">{a.audience}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-[var(--muted)] text-pretty">
+                  {a.body}
+                </p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </Section>
+
+      {/* Listing */}
+      <Section id="listing" tone="sunken">
+        <Reveal>
+          <Eyebrow>Our consultants</Eyebrow>
+        </Reveal>
+        <Reveal i={1}>
+          <h2 className="font-display display-lg mt-4 max-w-xl text-balance">
+            Meet the team.
+          </h2>
         </Reveal>
 
         <div className="mt-12">
-          {vendors.length === 0 ? (
+          {withPhotos.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-[var(--border)] px-8 py-16 text-center">
-              <p className="font-display text-xl">
-                {active
-                  ? `No ${(VENDOR_DISCIPLINE_PLURAL[active] ?? "partners").toLowerCase()} listed yet.`
-                  : "The directory is being built."}
-              </p>
+              <p className="font-display text-xl">The roster is being finalised.</p>
               <p className="mx-auto mt-3 max-w-md leading-relaxed text-[var(--muted)] text-pretty">
-                We’re onboarding the first partners now. If you design, build
-                or launch retail and franchise spaces, this is the moment to
-                apply.
+                In the meantime, tell us what you need and we'll match you with
+                the right person directly.
               </p>
               <div className="mt-8 flex justify-center">
-                <ButtonLink href="/become-a-vendor">Become a vendor</ButtonLink>
+                <ButtonLink href="/contact">Hire a Consultant</ButtonLink>
               </div>
             </div>
           ) : (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {vendors.map((vendor, i) => (
-                <Reveal key={vendor.organizationId} i={i % 3}>
-                  <VendorCard vendor={vendor} />
+              {withPhotos.map((c, i) => (
+                <Reveal key={c.id} i={i % 3}>
+                  <ConsultantCard
+                    id={c.id}
+                    name={c.name}
+                    photoUrl={c.photoUrl}
+                    expertise={c.expertise ?? []}
+                    yearsExperience={c.yearsExperience}
+                    bio={c.bio}
+                  />
                 </Reveal>
               ))}
             </div>
@@ -95,143 +150,45 @@ export default async function ConsultantsPage({
         </div>
       </Section>
 
-      <Section tone="sunken">
-        <div className="mx-auto max-w-2xl text-center">
-          <Reveal>
-            <Eyebrow>Join them</Eyebrow>
-          </Reveal>
-          <Reveal i={1}>
-            <h2 className="font-display display-lg mt-4 text-balance">
-              Work that arrives already briefed.
-            </h2>
-          </Reveal>
-          <Reveal i={2}>
-            <p className="mt-5 leading-relaxed text-[var(--muted)] text-pretty">
-              No fee to join, no charge to be listed. We make our money on the
-              expansion deal — not on our partners.
-            </p>
-          </Reveal>
-          <Reveal i={3}>
-            <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <ButtonLink href="/become-a-vendor">Become a vendor</ButtonLink>
-              <ButtonLink href="/partners" variant="secondary">
-                About the programme
-              </ButtonLink>
-            </div>
-          </Reveal>
+      {/* Testimonials — see consultantTestimonials for the placeholder
+          disclosure; replace with real, permissioned quotes before launch. */}
+      <Section>
+        <Reveal>
+          <Eyebrow>What clients say</Eyebrow>
+        </Reveal>
+        <Reveal i={1}>
+          <h2 className="font-display display-lg mt-4 max-w-2xl text-balance">
+            Advice people actually acted on.
+          </h2>
+        </Reveal>
+
+        <div className="mt-12 grid gap-6 lg:grid-cols-3">
+          {consultantTestimonials.map((t, i) => (
+            <Reveal key={t.company} i={i}>
+              <figure className="flex h-full flex-col rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-7">
+                <Quote size={22} className="text-violet-400/60" aria-hidden="true" />
+                <blockquote className="mt-4 flex-1 text-[15px] leading-relaxed text-[var(--foreground)] text-pretty">
+                  “{t.quote}”
+                </blockquote>
+                <figcaption className="mt-6 border-t border-[var(--border)] pt-4 text-sm">
+                  <span className="block font-medium">{t.role}</span>
+                  <span className="text-[var(--muted)]">{t.company}</span>
+                </figcaption>
+              </figure>
+            </Reveal>
+          ))}
         </div>
       </Section>
+
+      <AudienceFaq title="Before you get in touch." items={consultantFaqs} />
+
+      <CtaSection
+        eyebrow="Hire a consultant"
+        title="Tell us what you're deciding."
+        body="Site selection, feasibility, franchise structuring — describe the decision in front of you and we'll tell you honestly whether a consultant can help."
+        photo={photos.boardroom}
+        secondary={{ href: "/solutions", label: "Explore our other services" }}
+      />
     </>
-  );
-}
-
-function FilterChip({
-  href,
-  label,
-  active,
-}: {
-  href: string;
-  label: string;
-  active: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={clsx(
-        "rounded-full border px-4 py-2 text-sm transition-colors",
-        active
-          ? "border-violet-600 bg-violet-600 text-white"
-          : "border-[var(--border)] text-[var(--muted)] hover:border-violet-400 hover:text-violet-600",
-      )}
-    >
-      {label}
-    </Link>
-  );
-}
-
-async function VendorCard({ vendor }: { vendor: VendorRow }) {
-  const [logo, cover] = await Promise.all([
-    resolveMediaUrl(vendor.logoUrl),
-    resolveMediaUrl(vendor.coverUrl),
-  ]);
-
-  return (
-    <Link
-      href={`/consultants/${vendor.slug}`}
-      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] transition-all hover:border-violet-400 hover:shadow-[0_28px_56px_-32px_rgba(20,20,26,0.35)]"
-    >
-      <div className="relative aspect-[16/10] overflow-hidden bg-[var(--surface-sunken)]">
-        {cover ? (
-          // eslint-disable-next-line @next/next/no-img-element -- private signed Storage URL
-          <img
-            src={cover}
-            alt=""
-            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <span className="font-display text-3xl text-[var(--muted)]/40">
-              {vendor.name.charAt(0)}
-            </span>
-          </div>
-        )}
-        <span className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-xs font-medium text-ink backdrop-blur-sm">
-          {VENDOR_DISCIPLINE_LABEL[vendor.discipline] ?? vendor.discipline}
-        </span>
-      </div>
-
-      <div className="flex flex-1 flex-col p-5">
-        <div className="flex items-start gap-3">
-          {logo && (
-            // eslint-disable-next-line @next/next/no-img-element -- private signed Storage URL
-            <img
-              src={logo}
-              alt=""
-              className="h-10 w-10 shrink-0 rounded-lg border border-[var(--border)] bg-white object-contain"
-            />
-          )}
-          <div className="min-w-0">
-            <h3 className="truncate font-display text-lg">{vendor.name}</h3>
-            {vendor.citiesServed && vendor.citiesServed.length > 0 && (
-              <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-[var(--muted)]">
-                <MapPin size={11} className="shrink-0" />
-                {vendor.citiesServed.slice(0, 3).join(" · ")}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {vendor.headline && (
-          <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-[var(--muted)] text-pretty">
-            {vendor.headline}
-          </p>
-        )}
-
-        <div className="mt-auto flex items-center justify-between pt-5">
-          <div className="flex gap-4 text-xs text-[var(--muted)]">
-            {vendor.yearsExperience != null && (
-              <span>
-                <strong className="font-medium text-[var(--foreground)]">
-                  {vendor.yearsExperience}
-                </strong>{" "}
-                yrs
-              </span>
-            )}
-            {vendor.projectsCompleted != null && (
-              <span>
-                <strong className="font-medium text-[var(--foreground)]">
-                  {vendor.projectsCompleted}
-                </strong>{" "}
-                projects
-              </span>
-            )}
-          </div>
-          <ArrowUpRight
-            size={16}
-            className="text-[var(--muted)] transition-colors group-hover:text-violet-600"
-          />
-        </div>
-      </div>
-    </Link>
   );
 }

@@ -29,6 +29,20 @@
       "when": 1785519157091,
       "tag": "0003_short_gamma_corps",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1785753803269,
+      "tag": "0004_dark_rictor",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1785754922245,
+      "tag": "0005_aberrant_blockbuster",
+      "breakpoints": true
     }
   ]
 }

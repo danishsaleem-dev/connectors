@@ -8,6 +8,8 @@ import { hashPassword } from "@/lib/auth/password";
 import { getDb } from "@/lib/db/client";
 import {
   brandProfiles,
+  consultantInquiries,
+  consultants,
   developerProfiles,
   documents,
   franchiseOpportunities,
@@ -439,6 +441,115 @@ export async function deleteFranchiseOpportunity(
     return { ok: true };
   } catch (err) {
     return fail("deleteFranchiseOpportunity", err, "Couldn't remove that opportunity.");
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Consultants — Connectors' own in-house consultancy roster          */
+/* ------------------------------------------------------------------ */
+
+/** Admin-only, no organization involved — this is Connectors' own roster,
+ * not a participant-owned record, so there's no ownership branching. */
+export async function saveConsultant(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdminUser();
+    const id = str(formData, "id");
+    const name = str(formData, "name");
+    if (!name) return { ok: false, error: "Enter a name." };
+
+    const values = {
+      name,
+      photoUrl: str(formData, "photoUrl"),
+      expertise: list(formData, "expertise"),
+      yearsExperience: num(formData, "yearsExperience"),
+      bio: str(formData, "bio"),
+      isPublished: bool(formData, "isPublished"),
+      sortOrder: num(formData, "sortOrder") ?? 0,
+    };
+
+    const db = getDb();
+    if (id) {
+      await db.update(consultants).set(values).where(eq(consultants.id, id));
+    } else {
+      await db.insert(consultants).values(values);
+    }
+
+    revalidatePortal();
+    revalidatePath("/consultants");
+    return { ok: true };
+  } catch (err) {
+    return fail("saveConsultant", err, "Couldn't save that consultant.");
+  }
+}
+
+export async function deleteConsultant(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdminUser();
+    const id = str(formData, "id");
+    if (!id) return { ok: false, error: "Missing consultant." };
+
+    await getDb().delete(consultants).where(eq(consultants.id, id));
+
+    revalidatePortal();
+    revalidatePath("/consultants");
+    return { ok: true };
+  } catch (err) {
+    return fail("deleteConsultant", err, "Couldn't remove that consultant.");
+  }
+}
+
+/** Quick publish/unpublish toggle from the admin list row — a Select posting
+ * "true"/"false" strings, same idiom as setPropertyStatus's status dropdown,
+ * just for a boolean column instead of an enum. */
+export async function setConsultantPublished(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdminUser();
+    const id = str(formData, "id");
+    const isPublished = str(formData, "isPublished");
+    if (!id || isPublished === null) return { ok: false, error: "Missing consultant or status." };
+
+    await getDb()
+      .update(consultants)
+      .set({ isPublished: isPublished === "true" })
+      .where(eq(consultants.id, id));
+
+    revalidatePortal();
+    revalidatePath("/consultants");
+    return { ok: true };
+  } catch (err) {
+    return fail("setConsultantPublished", err, "Couldn't update that consultant.");
+  }
+}
+
+/** Quick status change from the consultant inquiries list row. */
+export async function setConsultantInquiryStatus(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdminUser();
+    const id = str(formData, "id");
+    const status = str(formData, "status");
+    if (!id || !status) return { ok: false, error: "Missing inquiry or status." };
+
+    await getDb()
+      .update(consultantInquiries)
+      .set({ status: status as (typeof consultantInquiries.$inferInsert)["status"] })
+      .where(eq(consultantInquiries.id, id));
+
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("setConsultantInquiryStatus", err, "Couldn't update that inquiry.");
   }
 }
 

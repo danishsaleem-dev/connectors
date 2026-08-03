@@ -38,8 +38,10 @@ export function VendorCta({
             <ButtonLink href="/become-a-vendor" variant="onDark">
               Become a vendor
             </ButtonLink>
-            <ButtonLink href="/consultants" variant="outline">
-              Browse partners
+            {/* Was /consultants — that URL is now Connectors' own in-house
+                consultancy service page, not the Partners Program directory. */}
+            <ButtonLink href="/partners" variant="outline">
+              About the programme
             </ButtonLink>
           </div>
         </Reveal>
