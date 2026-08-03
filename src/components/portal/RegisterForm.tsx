@@ -8,16 +8,12 @@ import type { OrgType } from "@/lib/db/schema";
 
 const initialState: RegisterState = {};
 
-/** Investors are onboarded by the Connectors team directly, so they aren't
- * offered here — capital relationships start with a conversation. Vendors
- * are offered only when locked in from /become-a-vendor, not in the picker
- * grid, since /portal/register is the brand/franchisee/landlord/developer
- * front door and vendors have their own dedicated entry point. */
 const CHOICES: { value: OrgType; label: string; orgLabel: string }[] = [
   { value: "brand", label: "Brand", orgLabel: "Company name" },
   { value: "franchisee", label: "Franchisee", orgLabel: "Business name (or your own)" },
   { value: "landlord", label: "Landlord", orgLabel: "Company / individual name" },
   { value: "developer", label: "Mall / Developer", orgLabel: "Company name" },
+  { value: "investor", label: "Investor", orgLabel: "Company / individual name" },
   { value: "vendor", label: "Vendor", orgLabel: "Studio / company name" },
 ];
 
@@ -34,8 +30,8 @@ export function RegisterForm({ lockedType }: { lockedType?: OrgType }) {
       {!lockedType && (
         <div>
           <span className="mb-1.5 block text-[13px] font-medium">I am a…</span>
-          <div className="grid grid-cols-2 gap-2">
-            {CHOICES.filter((c) => c.value !== "vendor").map((choice) => (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {CHOICES.map((choice) => (
               <button
                 key={choice.value}
                 type="button"

@@ -18,7 +18,7 @@ const COPY = {
   register: {
     eyebrow: "Connectors Portal",
     title: "Join the network.",
-    body: "Brands, franchisees and landlords all start here. Fill in your profile, and our team will follow up directly.",
+    body: "Brands, franchisees, landlords, investors and vendors all start here. Fill in your profile, and our team will follow up directly.",
   },
 } as const;
 
@@ -49,7 +49,7 @@ export function AuthModal() {
   const copy = COPY[view];
 
   return (
-    <Modal onClose={close} className="max-w-3xl overflow-hidden lg:grid lg:grid-cols-2">
+    <Modal onClose={close} className="max-w-4xl overflow-hidden lg:grid lg:grid-cols-2">
       <div className="relative hidden flex-col justify-between overflow-hidden bg-ink p-10 text-white lg:flex">
         <OrbitField
           count={26}

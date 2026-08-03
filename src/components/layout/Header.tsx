@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Menu, X } from "lucide-react";
+import { ChevronDown, Menu, User, X } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ButtonLink } from "@/components/ui";
 import { divisions } from "@/lib/content/divisions";
@@ -17,6 +17,23 @@ type MenuKey = "solutions" | "audiences";
 
 export function Header() {
   const pathname = usePathname();
+  // Fetched client-side rather than passed down from a server layout —
+  // reading the session there would force every static marketing page into
+  // dynamic rendering just to personalize this one icon. Defaults to
+  // signed-out until the fetch resolves; a brief flash to the wrong state
+  // is a fine trade for keeping the rest of the site static.
+  const [session, setSession] = useState({ signedIn: false, isAdmin: false });
+  useEffect(() => {
+    fetch("/api/session")
+      .then((res) => res.json())
+      .then((data) => setSession({ signedIn: !!data.signedIn, isAdmin: !!data.isAdmin }))
+      .catch(() => {});
+  }, []);
+  const accountHref = session.signedIn
+    ? session.isAdmin
+      ? "/portal/admin"
+      : "/portal"
+    : "?auth=login";
   const [scrolled, setScrolled] = useState(false);
   const [openMenu, setOpenMenu] = useState<MenuKey | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -124,9 +141,13 @@ export function Header() {
               source order, so `hidden` from a later-appended className
               doesn't reliably beat it. */}
           <div className="hidden items-center gap-2 md:flex">
-            <ButtonLink href="?auth=login" variant="ghost" size="sm" showIcon={false}>
-              Join
-            </ButtonLink>
+            <Link
+              href={accountHref}
+              aria-label={session.signedIn ? "Go to your portal" : "Sign in"}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-600 text-white transition-colors hover:bg-violet-700"
+            >
+              <User size={17} />
+            </Link>
             <ButtonLink href="/for-brands" size="sm">
               Start a conversation
             </ButtonLink>
@@ -203,6 +224,7 @@ export function Header() {
                     {d.navLabel}
                   </MobileLink>
                 ))}
+                <MobileLink href="/available-locations">Available Locations</MobileLink>
               </MobileGroup>
 
               <div className="flex flex-col gap-3">
@@ -210,12 +232,12 @@ export function Header() {
                   Start a conversation
                 </ButtonLink>
                 <ButtonLink
-                  href="?auth=login"
+                  href={accountHref}
                   variant="secondary"
                   showIcon={false}
                   className="w-full"
                 >
-                  Partner login
+                  {session.signedIn ? "Go to my portal" : "Partner login"}
                 </ButtonLink>
               </div>
             </div>
@@ -312,6 +334,22 @@ function SolutionsMenu() {
             </Link>
           </li>
         ))}
+        <li>
+          <Link
+            href="/available-locations"
+            className="group flex gap-4 rounded-2xl px-4 py-3 transition-colors hover:bg-violet-600/[0.05]"
+          >
+            <span className="font-display text-sm text-violet-400">•</span>
+            <span>
+              <span className="block text-sm font-medium group-hover:text-violet-600">
+                Available Locations
+              </span>
+              <span className="mt-0.5 block text-xs text-[var(--muted)]">
+                Browse space that's currently listed
+              </span>
+            </span>
+          </Link>
+        </li>
       </ul>
     </div>
   );

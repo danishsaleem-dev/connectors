@@ -94,16 +94,16 @@ export function orgTypeBySlug(slug: string): OrgTypeMeta | undefined {
   return ORG_TYPES.find((t) => t.slug === slug);
 }
 
-/** Types a visitor can self-register as. Investors are added by Connectors
- * directly, since capital relationships start with a conversation. Vendors
- * sign up instantly through /become-a-vendor, then complete onboarding —
- * the directory listing itself stays gated behind `isPublished`, so a
- * self-signup account doesn't reach the public directory until reviewed. */
+/** Types a visitor can self-register as. Every org type is now offered on
+ * the signup picker, including investor and vendor — a vendor's directory
+ * listing itself still stays gated behind `isPublished`, so a self-signup
+ * account doesn't reach the public directory until reviewed. */
 export const SELF_SERVICE_TYPES: OrgType[] = [
   "brand",
   "franchisee",
   "landlord",
   "developer",
+  "investor",
   "vendor",
 ];
 
