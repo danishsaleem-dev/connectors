@@ -4,13 +4,13 @@ import Link from "next/link";
  * a full profile (bio, experience, education, the enquiry form) needs more
  * room than a modal gives it, and deserves its own shareable URL. */
 export function ConsultantCard({
-  id,
+  slug,
   name,
   photoUrl,
   expertise,
   yearsExperience,
 }: {
-  id: string;
+  slug: string;
   name: string;
   photoUrl: string | null;
   expertise: string[];
@@ -18,7 +18,7 @@ export function ConsultantCard({
 }) {
   return (
     <Link
-      href={`/consultants/${id}`}
+      href={`/consultants/${slug}`}
       className="flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] transition-all hover:border-violet-400 hover:shadow-[0_28px_56px_-32px_rgba(20,20,26,0.35)]"
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-[var(--surface-sunken)]">

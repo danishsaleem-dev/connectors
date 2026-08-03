@@ -138,7 +138,7 @@ export default async function ConsultantsPage() {
               {withPhotos.map((c, i) => (
                 <Reveal key={c.id} i={i % 3}>
                   <ConsultantCard
-                    id={c.id}
+                    slug={c.slug ?? c.id}
                     name={c.name}
                     photoUrl={c.photoUrl}
                     expertise={c.expertise ?? []}

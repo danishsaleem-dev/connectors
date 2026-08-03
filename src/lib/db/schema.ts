@@ -385,6 +385,10 @@ export type ConsultantEducation = {
 export const consultants = pgTable("consultants", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
+  /** Public URL handle — /consultants/<slug>. Generated from the name once,
+   * on create, then left alone: renaming a consultant shouldn't silently
+   * break every link already pointing at their profile. */
+  slug: text("slug").unique(),
   photoUrl: text("photo_url"),
   expertise: text("expertise").array(),
   yearsExperience: integer("years_experience"),

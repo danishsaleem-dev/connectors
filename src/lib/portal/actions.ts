@@ -497,9 +497,11 @@ export async function saveConsultant(
 
     const db = getDb();
     if (id) {
+      // `slug` is deliberately not in `values` — it's set once on create and
+      // never rewritten, so an edit can't break existing profile links.
       await db.update(consultants).set(values).where(eq(consultants.id, id));
     } else {
-      await db.insert(consultants).values(values);
+      await db.insert(consultants).values({ ...values, slug: await uniqueConsultantSlug(name) });
     }
 
     revalidatePortal();
@@ -508,6 +510,20 @@ export async function saveConsultant(
   } catch (err) {
     return fail("saveConsultant", err, "Couldn't save that consultant.");
   }
+}
+
+/** Name-derived handle for the public profile URL, with a numeric suffix if
+ * two consultants share a name — the column is unique, so a collision would
+ * otherwise fail the insert outright. */
+async function uniqueConsultantSlug(name: string) {
+  const base = slugify(name) || "consultant";
+  const rows = await getDb().select({ slug: consultants.slug }).from(consultants);
+  const taken = new Set(rows.map((r) => r.slug).filter(Boolean));
+  if (!taken.has(base)) return base;
+  for (let i = 2; i < 100; i++) {
+    if (!taken.has(`${base}-${i}`)) return `${base}-${i}`;
+  }
+  return `${base}-${Date.now().toString(36)}`;
 }
 
 export async function deleteConsultant(

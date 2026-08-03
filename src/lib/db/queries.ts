@@ -182,12 +182,12 @@ export async function listPublishedConsultants() {
 }
 
 /** Gated the same way as the listing — an unpublished (or not-yet-reviewed)
- * consultant's page 404s rather than being reachable by guessing an id. */
-export async function getPublishedConsultantById(id: string) {
+ * consultant's page 404s rather than being reachable by guessing a URL. */
+export async function getPublishedConsultantBySlug(slug: string) {
   const [row] = await getDb()
     .select()
     .from(consultants)
-    .where(and(eq(consultants.id, id), eq(consultants.isPublished, true)))
+    .where(and(eq(consultants.slug, slug), eq(consultants.isPublished, true)))
     .limit(1);
   return row ?? null;
 }

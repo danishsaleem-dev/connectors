@@ -57,6 +57,13 @@
       "when": 1785761083603,
       "tag": "0007_mushy_magma",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1785771085295,
+      "tag": "0008_great_the_fallen",
+      "breakpoints": true
     }
   ]
 }
