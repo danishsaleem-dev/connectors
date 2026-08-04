@@ -31,7 +31,13 @@ export function AudienceDivisions({
             i={i % 3}
             className="bg-[var(--background)] p-7"
           >
-            <span className="font-display text-sm text-violet-600">{division.index}</span>
+            {/* Sequential within this filtered subset, not division.index —
+                that's the global position across all seven divisions, which
+                reads as broken (e.g. "02, 06, 07") once only a few are
+                shown for a given audience. */}
+            <span className="font-display text-sm text-violet-600">
+              {String(i + 1).padStart(2, "0")}
+            </span>
             <h3 className="font-display mt-3 text-xl leading-snug">{division.navLabel}</h3>
             <p className="mt-2.5 text-sm leading-relaxed text-[var(--muted)]">
               {division.short}

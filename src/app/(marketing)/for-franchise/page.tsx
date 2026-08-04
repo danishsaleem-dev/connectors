@@ -60,14 +60,12 @@ export default async function ForFranchisePage({
 
       <IndustriesMarquee />
 
-      <AudienceAppPromo audience="for-franchise" />
-
-      <VendorCta />
-
       <TestimonialSection
-        heading="Franchisees who've already made the move."
+        heading="Successful stories"
         items={franchiseTestimonials}
       />
+
+      <VendorCta />
 
       <FaqVideoSection
         heading="Before you apply."
@@ -75,6 +73,8 @@ export default async function ForFranchisePage({
         videoTitle="How franchising through Connectors works"
         faqs={franchiseFaqs}
       />
+
+      <AudienceAppPromo audience="for-franchise" />
 
       <Section id="request-form" tone="sunken">
         <div className="mx-auto max-w-3xl">
