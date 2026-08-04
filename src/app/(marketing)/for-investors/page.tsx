@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
 import { AudienceAppPromo } from "@/components/audience/AudienceAppPromo";
 import { AudienceDivisions } from "@/components/audience/AudienceDivisions";
-import { AudienceFaq } from "@/components/audience/AudienceFaq";
 import { AudienceGallery } from "@/components/audience/AudienceGallery";
 import { AudienceHero } from "@/components/audience/AudienceHero";
 import { InvestorEnquiryForm } from "@/components/forms/InvestorEnquiryForm";
+import { FaqVideoSection } from "@/components/FaqVideoSection";
 import { GatedForm } from "@/components/GatedForm";
+import { TestimonialSection } from "@/components/TestimonialSection";
 import { VendorCta } from "@/components/VendorCta";
 import { IndustriesMarquee } from "@/components/IndustriesMarquee";
 import { Reveal } from "@/components/Reveal";
 import { Eyebrow, Section } from "@/components/ui";
-import { faqs } from "@/lib/content/faq";
+import { investorFaqs, investorTestimonials, investorVideoUrl } from "@/lib/content/investors";
 import { photos } from "@/lib/images";
 import { audiences } from "@/lib/site";
 
@@ -50,11 +51,18 @@ export default function ForInvestorsPage() {
 
       <IndustriesMarquee />
 
+      <TestimonialSection heading="Successful stories" items={investorTestimonials} />
+
       <AudienceAppPromo audience="for-investors" />
 
       <VendorCta />
 
-      <AudienceFaq items={faqs} />
+      <FaqVideoSection
+        heading="Before you share your profile."
+        videoUrl={investorVideoUrl}
+        videoTitle="How investor introductions work through Connectors"
+        faqs={investorFaqs}
+      />
 
       <Section id="request-form" tone="sunken">
         <div className="mx-auto max-w-3xl">

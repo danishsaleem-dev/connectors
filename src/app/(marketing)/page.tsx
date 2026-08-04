@@ -2,8 +2,8 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { Hero } from "@/components/home/Hero";
 import { AppShowcase } from "@/components/home/AppShowcase";
-import { Testimonials } from "@/components/home/Testimonials";
-import { HomeFaq } from "@/components/home/HomeFaq";
+import { FaqVideoSection } from "@/components/FaqVideoSection";
+import { TestimonialSection } from "@/components/TestimonialSection";
 import { CtaSection } from "@/components/CtaSection";
 import { Marquee } from "@/components/Marquee";
 import { Photo } from "@/components/Photo";
@@ -11,6 +11,8 @@ import { Reveal } from "@/components/Reveal";
 import { Eyebrow, Section } from "@/components/ui";
 import { connections, industries, process } from "@/lib/content/company";
 import { divisions } from "@/lib/content/divisions";
+import { faqs } from "@/lib/content/faq";
+import { homeTestimonials, homeVideoUrl } from "@/lib/content/testimonials";
 import { photos } from "@/lib/images";
 import { audiences, stats } from "@/lib/site";
 
@@ -279,9 +281,14 @@ export default function HomePage() {
         </div>
       </Section>
 
-      <Testimonials />
+      <TestimonialSection heading="Successful stories" items={homeTestimonials} />
 
-      <HomeFaq />
+      <FaqVideoSection
+        heading="Common questions, answered plainly."
+        videoUrl={homeVideoUrl}
+        videoTitle="How Connectors works"
+        faqs={faqs}
+      />
 
       {/* Real figures only — see the note on `stats` in src/lib/site.ts. */}
       {stats.length > 0 && (

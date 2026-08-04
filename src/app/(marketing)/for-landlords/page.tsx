@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
 import { AudienceAppPromo } from "@/components/audience/AudienceAppPromo";
 import { AudienceDivisions } from "@/components/audience/AudienceDivisions";
-import { AudienceFaq } from "@/components/audience/AudienceFaq";
 import { AudienceGallery } from "@/components/audience/AudienceGallery";
 import { AudienceHero } from "@/components/audience/AudienceHero";
 import { LandlordEnquiryForm } from "@/components/forms/LandlordEnquiryForm";
+import { FaqVideoSection } from "@/components/FaqVideoSection";
 import { GatedForm } from "@/components/GatedForm";
+import { TestimonialSection } from "@/components/TestimonialSection";
 import { VendorCta } from "@/components/VendorCta";
 import { IndustriesMarquee } from "@/components/IndustriesMarquee";
 import { Reveal } from "@/components/Reveal";
 import { Eyebrow, Section } from "@/components/ui";
-import { faqs } from "@/lib/content/faq";
+import { landlordFaqs, landlordTestimonials, landlordVideoUrl } from "@/lib/content/landlords";
 import { photos } from "@/lib/images";
 import { audiences } from "@/lib/site";
 
@@ -50,11 +51,18 @@ export default function ForLandlordsPage() {
 
       <IndustriesMarquee />
 
+      <TestimonialSection heading="Successful stories" items={landlordTestimonials} />
+
       <AudienceAppPromo audience="for-landlords" />
 
       <VendorCta />
 
-      <AudienceFaq items={faqs} />
+      <FaqVideoSection
+        heading="Before you submit your property."
+        videoUrl={landlordVideoUrl}
+        videoTitle="How listing a property with Connectors works"
+        faqs={landlordFaqs}
+      />
 
       <Section id="request-form" tone="sunken">
         <div className="mx-auto max-w-3xl">
