@@ -22,6 +22,16 @@ export const metadata: Metadata = {
     "Work with the best consultants for site selection, feasibility and franchise structuring — expansion advice for brands, franchisees and landlords.",
 };
 
+/**
+ * Without this, Next prerenders the page once at build time — including the
+ * signed Supabase Storage URLs for each consultant's photo, which expire
+ * after SIGNED_URL_TTL_SECONDS (1 hour, see lib/storage/media.ts). Every
+ * visitor after that hour sees a broken image, forever, until the next
+ * deploy. Revalidating well inside that hour keeps photos fresh without
+ * making every visit hit the database directly.
+ */
+export const revalidate = 1800;
+
 export default async function ConsultantsPage() {
   const consultants = await listPublishedConsultants();
   const withPhotos = await Promise.all(
