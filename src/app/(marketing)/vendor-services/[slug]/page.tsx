@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Check } from "lucide-react";
+import { FaqVideoSection } from "@/components/FaqVideoSection";
 import { Photo } from "@/components/Photo";
 import { Reveal } from "@/components/Reveal";
+import { ServiceInquiryForm } from "@/components/ServiceInquiryForm";
 import { VendorCta } from "@/components/VendorCta";
 import { ButtonLink, Eyebrow, Section } from "@/components/ui";
 import { getVendorService, vendorServices } from "@/lib/content/vendor-services";
@@ -97,11 +97,11 @@ export default async function VendorServicePage({
             </Reveal>
             <Reveal i={4}>
               <div className="mt-8 flex flex-wrap gap-3">
-                <ButtonLink href="/contact" variant="onDark" size="lg">
-                  Request this service
+                <ButtonLink href="#enquire" variant="onDark" size="lg">
+                  Enquire about this service
                 </ButtonLink>
-                <ButtonLink href="/vendor-services" variant="outline" size="lg">
-                  All vendor services
+                <ButtonLink href="#what-we-do" variant="outline" size="lg">
+                  What's involved
                 </ButtonLink>
               </div>
             </Reveal>
@@ -136,36 +136,43 @@ export default async function VendorServicePage({
         </div>
       </Section>
 
-      {/* What's included */}
-      <Section tone="sunken">
-        <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
-          <div>
-            <Reveal>
-              <Eyebrow>What's included</Eyebrow>
-            </Reveal>
-            <Reveal i={1}>
-              <h2 className="font-display display-lg mt-4 text-balance">
-                What we deliver.
-              </h2>
-            </Reveal>
-            <Reveal i={2}>
-              <p className="mt-5 max-w-md leading-relaxed text-[var(--muted)] text-pretty">
-                Brought in through the Partners Program and coordinated by the
-                Connectors team, so scope and timeline arrive already agreed.
-              </p>
-            </Reveal>
-          </div>
+      {/* What we do — each deliverable carries its own explanation rather than
+          being a one-word checklist item, so the page says what the work is. */}
+      <Section id="what-we-do" tone="sunken">
+        <div className="max-w-2xl">
+          <Reveal>
+            <Eyebrow>What's involved</Eyebrow>
+          </Reveal>
+          <Reveal i={1}>
+            <h2 className="font-display display-lg mt-4 text-balance">
+              What we actually do.
+            </h2>
+          </Reveal>
+          <Reveal i={2}>
+            <p className="mt-5 leading-relaxed text-[var(--muted)] text-pretty">
+              Delivered by vetted specialists from the Partners Program and
+              coordinated by the Connectors team, so scope, cost and timeline
+              arrive already agreed rather than negotiated as you go.
+            </p>
+          </Reveal>
+        </div>
 
-          <ul className="grid gap-x-10 gap-y-1 sm:grid-cols-2">
-            {service.details.map((item, i) => (
-              <Reveal as="li" key={item} i={i % 6}>
-                <div className="flex items-start gap-3 border-b border-[var(--border)] py-4">
-                  <Check size={16} className="mt-0.5 shrink-0 text-violet-600" />
-                  <span className="text-[15px] leading-relaxed">{item}</span>
+        <div className="mt-14 grid gap-x-16 gap-y-10 lg:grid-cols-2">
+          {service.deliverables.map((item, i) => (
+            <Reveal key={item.title} i={i % 2}>
+              <div className="flex gap-5 border-t border-[var(--border)] pt-6">
+                <span className="font-display text-xl tabular-nums text-violet-600/50">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div>
+                  <h3 className="font-display text-xl leading-snug">{item.title}</h3>
+                  <p className="mt-2.5 text-[15px] leading-relaxed text-[var(--muted)] text-pretty">
+                    {item.body}
+                  </p>
                 </div>
-              </Reveal>
-            ))}
-          </ul>
+              </div>
+            </Reveal>
+          ))}
         </div>
       </Section>
 
@@ -197,6 +204,44 @@ export default async function VendorServicePage({
         </Reveal>
       </Section>
 
+      <FaqVideoSection
+        heading={`${service.title}, answered.`}
+        videoUrl={service.videoUrl ?? null}
+        videoTitle={`${service.title} — how it works`}
+        faqs={service.faqs}
+      />
+
+      <Section id="enquire">
+        <div className="grid gap-12 lg:grid-cols-[1fr_1fr] lg:items-start lg:gap-20">
+          <div>
+            <Reveal>
+              <Eyebrow>Enquire</Eyebrow>
+            </Reveal>
+            <Reveal i={1}>
+              <h2 className="font-display display-lg mt-4 text-balance">
+                Ask us about {service.title.toLowerCase()}.
+              </h2>
+            </Reveal>
+            <Reveal i={2}>
+              <p className="mt-5 max-w-md leading-relaxed text-[var(--muted)] text-pretty">
+                Tell us what you're planning — a single opening, a rollout, or
+                a problem you're trying to solve — and we'll come back with who
+                we'd bring in and what it would involve.
+              </p>
+            </Reveal>
+          </div>
+
+          <Reveal i={1}>
+            <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8">
+              <ServiceInquiryForm
+                subject={`Vendor service: ${service.title}`}
+                placeholder={`What do you need from ${service.title.toLowerCase()}?`}
+              />
+            </div>
+          </Reveal>
+        </div>
+      </Section>
+
       {/* The discipline goes in the body, not the title — de-pluralising the
           title to fit "are you a…" produces broken grammar on half of these
           ("a architect", "a audit"). */}
@@ -204,18 +249,6 @@ export default async function VendorServicePage({
         title="Are you a vendor? Join the Connectors community."
         body={`We bring ${service.title.toLowerCase()} into brand openings across the UK, US and Pakistan. No fee to join, no subscription to stay — and your profile is never published publicly.`}
       />
-
-      <Section className="!pt-0">
-        <div className="border-t border-[var(--border)] pt-8">
-          <Link
-            href="/vendor-services"
-            className="inline-flex items-center gap-2 text-sm text-[var(--muted)] transition-colors hover:text-violet-600"
-          >
-            <ArrowLeft size={15} />
-            All vendor services
-          </Link>
-        </div>
-      </Section>
     </>
   );
 }

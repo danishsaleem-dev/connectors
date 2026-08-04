@@ -34,6 +34,10 @@ export async function submitQuickContact(
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
   const message = String(formData.get("message") ?? "").trim();
+  /** Optional context set by the page embedding the form — e.g. which vendor
+   * service the visitor is asking about. Purely for the notification's
+   * subject line, so a reply doesn't have to guess what it's about. */
+  const subject = String(formData.get("subject") ?? "").trim();
 
   if (name.length < 2) {
     return { ok: false, error: "Enter your name." };
@@ -55,8 +59,8 @@ export async function submitQuickContact(
         from: process.env.CONTACT_FROM_EMAIL ?? "Connectors Website <onboarding@resend.dev>",
         to: site.email.general,
         replyTo: email,
-        subject: `New enquiry from ${name}`,
-        text: `${name} <${email}> wrote:\n\n${message}`,
+        subject: subject ? `${subject} — enquiry from ${name}` : `New enquiry from ${name}`,
+        text: `${name} <${email}> wrote:\n\n${message}${subject ? `\n\n---\nAbout: ${subject}` : ""}`,
       });
       if (error) throw error;
     } else {
@@ -64,6 +68,7 @@ export async function submitQuickContact(
         name,
         email,
         message,
+        subject,
       });
     }
     return { ok: true };
