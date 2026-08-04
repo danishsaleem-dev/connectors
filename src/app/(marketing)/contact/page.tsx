@@ -1,9 +1,25 @@
 import type { Metadata } from "next";
+import { Navigation } from "lucide-react";
 import { CtaSection } from "@/components/CtaSection";
 import { Reveal } from "@/components/Reveal";
 import { Eyebrow, Section } from "@/components/ui";
 import { photos } from "@/lib/images";
-import { offices, site } from "@/lib/site";
+import { offices, site, type Office } from "@/lib/site";
+
+/** No API key needed — a Google Maps search URL built from the address text
+ * opens directions the same way a "get directions" link normally would. */
+function directionsUrl(office: Office) {
+  const query = [
+    office.address.street,
+    office.address.locality,
+    office.address.region,
+    office.address.postalCode,
+    office.address.country,
+  ]
+    .filter(Boolean)
+    .join(", ");
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -39,9 +55,20 @@ export default function ContactPage() {
             <Reveal
               key={office.id}
               i={i}
-              className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-7"
+              className="relative rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-7"
             >
-              <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-violet-600">
+              <a
+                href={directionsUrl(office)}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Get directions to the ${office.label}`}
+                title="Get directions"
+                className="absolute right-5 top-5 flex h-11 w-11 items-center justify-center rounded-full border border-[var(--border)] text-violet-600 transition-colors hover:border-violet-400 hover:bg-violet-50"
+              >
+                <Navigation size={20} />
+              </a>
+
+              <p className="max-w-[calc(100%-3.5rem)] text-[11px] font-medium uppercase tracking-[0.22em] text-violet-600">
                 {office.label}
               </p>
               <address className="mt-4 text-sm not-italic leading-relaxed text-[var(--muted)]">
