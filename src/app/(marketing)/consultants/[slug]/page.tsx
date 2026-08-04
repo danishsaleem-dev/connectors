@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, FileText, GraduationCap } from "lucide-react";
+import { ArrowLeft, Check, FileText, GraduationCap } from "lucide-react";
 import { ConsultantInquiryForm } from "@/components/ConsultantInquiryForm";
 import { Reveal } from "@/components/Reveal";
 import { ButtonLink, Eyebrow, Section } from "@/components/ui";
@@ -36,12 +36,13 @@ export default async function ConsultantProfilePage({
   const photo = await resolveMediaUrl(consultant.photoUrl);
   const experience = consultant.experience ?? [];
   const education = consultant.education ?? [];
+  const expertise = consultant.expertise ?? [];
   const [experienceUrls, educationUrls] = await Promise.all([
     Promise.all(experience.map((e) => resolveMediaUrl(e.attachment))),
     Promise.all(education.map((e) => resolveMediaUrl(e.attachment))),
   ]);
 
-  const firstName = consultant.name.split(" ")[0];
+  const firstName = consultant.firstName || consultant.name.split(" ")[0];
 
   return (
     <>
@@ -79,10 +80,10 @@ export default async function ConsultantProfilePage({
               <h1 className="font-display display-xl mt-5 text-balance">{consultant.name}</h1>
             </Reveal>
 
-            {consultant.expertise && consultant.expertise.length > 0 && (
+            {expertise.length > 0 && (
               <Reveal i={2}>
                 <div className="mt-6 flex flex-wrap gap-2">
-                  {consultant.expertise.map((s) => (
+                  {expertise.map((s) => (
                     <span
                       key={s}
                       className="rounded-full border border-violet-600/25 bg-violet-50 px-3.5 py-1.5 text-sm text-violet-600"
@@ -128,104 +129,130 @@ export default async function ConsultantProfilePage({
         </div>
       </Section>
 
-      {experience.length > 0 && (
+      {/* Expertise — the main point of the page, so it gets its own
+          full-width section rather than just the chip row above. */}
+      {expertise.length > 0 && (
         <Section tone="sunken">
-          <Reveal>
-            <Eyebrow>Experience</Eyebrow>
-          </Reveal>
-          <Reveal i={1}>
-            <h2 className="font-display display-lg mt-4 max-w-xl text-balance">
-              Where {firstName} has done this before.
-            </h2>
-          </Reveal>
+          <div className="max-w-2xl">
+            <Reveal>
+              <Eyebrow>Expertise</Eyebrow>
+            </Reveal>
+            <Reveal i={1}>
+              <h2 className="font-display display-lg mt-4 text-balance">
+                What {firstName} helps with.
+              </h2>
+            </Reveal>
+          </div>
 
-          {/* Timeline — the rail and dots make the sequence readable at a
-              glance in a way the previous flat list didn't. */}
-          <ol className="mt-12 ml-1 space-y-10 border-l border-[var(--border)]">
-            {experience.map((e, i) => (
-              <Reveal as="li" key={i} i={i % 4} className="relative pl-8">
-                <span
-                  aria-hidden="true"
-                  className="absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full bg-violet-600 ring-4 ring-[var(--surface-sunken)]"
-                />
-                {(e.yearFrom || e.yearTo) && (
-                  <p className="text-xs font-medium uppercase tracking-[0.16em] text-violet-600">
-                    {[e.yearFrom, e.yearTo].filter(Boolean).join(" — ")}
-                  </p>
-                )}
-                <h3 className="font-display mt-2 text-xl">{e.title}</h3>
-                {e.description && (
-                  <p className="mt-2.5 max-w-2xl leading-relaxed text-[var(--muted)] text-pretty">
-                    {e.description}
-                  </p>
-                )}
-                {experienceUrls[i] && (
-                  <a
-                    href={experienceUrls[i]!}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-4 inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3.5 py-1.5 text-xs font-medium text-[var(--muted)] transition-colors hover:border-violet-400 hover:text-violet-600"
-                  >
-                    <FileText size={12} />
-                    View document
-                  </a>
-                )}
+          <ul className="mt-12 grid gap-x-10 gap-y-1 sm:grid-cols-2">
+            {expertise.map((s, i) => (
+              <Reveal as="li" key={s} i={i % 6}>
+                <div className="flex items-start gap-3 border-b border-[var(--border)] py-4">
+                  <Check size={16} className="mt-0.5 shrink-0 text-violet-600" />
+                  <span className="text-[15px] leading-relaxed">{s}</span>
+                </div>
               </Reveal>
             ))}
-          </ol>
+          </ul>
         </Section>
       )}
 
-      {education.length > 0 && (
+      {/* Experience — heading sticky in its own narrower column instead of
+          full shell width, so a short entry like "Chief Executive Officer"
+          doesn't leave a wall of empty space beside it. */}
+      {experience.length > 0 && (
         <Section>
-          <Reveal>
-            <Eyebrow>Degrees &amp; certificates</Eyebrow>
-          </Reveal>
-          <Reveal i={1}>
-            <h2 className="font-display display-lg mt-4 max-w-xl text-balance">
-              Qualified on paper, as well as in practice.
-            </h2>
-          </Reveal>
+          <div className="grid gap-10 lg:grid-cols-[0.7fr_1.3fr] lg:gap-16">
+            <div className="lg:sticky lg:top-32 lg:self-start">
+              <Reveal>
+                <Eyebrow>Experience</Eyebrow>
+              </Reveal>
+              <Reveal i={1}>
+                <h2 className="font-display display-lg mt-4 text-balance">
+                  Where {firstName} has done this before.
+                </h2>
+              </Reveal>
+            </div>
 
-          <div className="mt-12 grid gap-6 sm:grid-cols-2">
-            {education.map((e, i) => (
-              <Reveal key={i} i={i % 2}>
-                <div className="flex h-full flex-col rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 transition-all hover:border-violet-400 hover:shadow-[0_28px_56px_-32px_rgba(20,20,26,0.3)]">
-                  <div className="flex items-start justify-between gap-4">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
-                      <GraduationCap size={20} />
-                    </span>
-                    {e.year && (
-                      <span className="text-xs font-medium uppercase tracking-[0.16em] text-[var(--muted)]">
-                        {e.year}
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="font-display mt-5 text-lg leading-snug">{e.title}</h3>
+            <ol className="ml-1 space-y-10 border-l border-[var(--border)]">
+              {experience.map((e, i) => (
+                <Reveal as="li" key={i} i={i % 4} className="relative pl-8">
+                  <span
+                    aria-hidden="true"
+                    className="absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full bg-violet-600 ring-4 ring-[var(--background)]"
+                  />
+                  {(e.yearFrom || e.yearTo) && (
+                    <p className="text-xs font-medium uppercase tracking-[0.16em] text-violet-600">
+                      {[e.yearFrom, e.yearTo].filter(Boolean).join(" — ")}
+                    </p>
+                  )}
+                  <h3 className="font-display mt-2 text-xl">{e.title}</h3>
                   {e.description && (
-                    <p className="mt-2.5 text-sm leading-relaxed text-[var(--muted)] text-pretty">
+                    <p className="mt-2.5 leading-relaxed text-[var(--muted)] text-pretty">
                       {e.description}
                     </p>
                   )}
-                  {educationUrls[i] && (
+                  {experienceUrls[i] && (
                     <a
-                      href={educationUrls[i]!}
+                      href={experienceUrls[i]!}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-auto inline-flex w-fit items-center gap-2 pt-5 text-xs font-medium text-violet-600 underline underline-offset-4"
+                      className="mt-4 inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--surface)] px-3.5 py-1.5 text-xs font-medium text-[var(--muted)] transition-colors hover:border-violet-400 hover:text-violet-600"
                     >
                       <FileText size={12} />
-                      View certificate
+                      View document
                     </a>
                   )}
+                </Reveal>
+              ))}
+            </ol>
+          </div>
+        </Section>
+      )}
+
+      {/* Degrees & certificates — deliberately understated: a compact list,
+          not a grid of cards, so it doesn't compete with Expertise above. */}
+      {education.length > 0 && (
+        <Section tone="sunken">
+          <div className="max-w-2xl">
+            <Reveal>
+              <Eyebrow>Degrees &amp; certificates</Eyebrow>
+            </Reveal>
+          </div>
+
+          <div className="mt-8 divide-y divide-[var(--border)] border-t border-[var(--border)]">
+            {education.map((e, i) => (
+              <Reveal key={i} i={i % 4} className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1.5 py-4">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <GraduationCap size={15} className="shrink-0 text-violet-600" />
+                  <span className="font-medium">{e.title}</span>
+                  {e.year && (
+                    <span className="shrink-0 text-xs text-[var(--muted)]">{e.year}</span>
+                  )}
                 </div>
+                {educationUrls[i] && (
+                  <a
+                    href={educationUrls[i]!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-violet-600 underline underline-offset-4"
+                  >
+                    <FileText size={12} />
+                    View certificate
+                  </a>
+                )}
+                {e.description && (
+                  <p className="w-full pl-[1.6rem] text-sm leading-relaxed text-[var(--muted)] text-pretty">
+                    {e.description}
+                  </p>
+                )}
               </Reveal>
             ))}
           </div>
         </Section>
       )}
 
-      <Section id="enquire" tone="sunken">
+      <Section id="enquire">
         <div className="grid gap-10 lg:grid-cols-2 lg:gap-20">
           <div>
             <Reveal>

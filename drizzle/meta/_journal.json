@@ -78,6 +78,13 @@
       "when": 1785780426507,
       "tag": "0010_late_edwin_jarvis",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1785865370930,
+      "tag": "0011_regular_machine_man",
+      "breakpoints": true
     }
   ]
 }

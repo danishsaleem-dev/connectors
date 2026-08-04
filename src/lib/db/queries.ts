@@ -183,6 +183,20 @@ export async function listPublishedConsultants() {
     .orderBy(asc(consultants.sortOrder), desc(consultants.createdAt));
 }
 
+/** Every distinct expertise tag already used across the roster, for the
+ * admin form's autocomplete — encourages reusing "Site Selection" rather
+ * than accumulating "Site selection" / "site-selection" variants. Done in
+ * JS rather than a SQL unnest/distinct since the roster is small and this
+ * avoids a raw-SQL escape hatch for a one-off list. */
+export async function listExpertiseSuggestions() {
+  const rows = await getDb().select({ expertise: consultants.expertise }).from(consultants);
+  const set = new Set<string>();
+  for (const row of rows) {
+    for (const tag of row.expertise ?? []) set.add(tag);
+  }
+  return [...set].sort((a, b) => a.localeCompare(b));
+}
+
 /** Gated the same way as the listing — an unpublished (or not-yet-reviewed)
  * consultant's page 404s rather than being reachable by guessing a URL. */
 export async function getPublishedConsultantBySlug(slug: string) {

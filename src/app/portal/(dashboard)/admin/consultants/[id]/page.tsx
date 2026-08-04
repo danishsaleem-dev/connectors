@@ -5,10 +5,12 @@ import { eq } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth/current-user";
 import { getDb } from "@/lib/db/client";
 import { consultants } from "@/lib/db/schema";
+import { listExpertiseSuggestions } from "@/lib/db/queries";
 import { ActionForm } from "@/components/portal/ActionForm";
 import { MediaPicker } from "@/components/portal/MediaPicker";
 import { PortalHeader } from "@/components/portal/PortalHeader";
 import { RepeatableEntries } from "@/components/portal/RepeatableEntries";
+import { TagInput } from "@/components/portal/TagInput";
 import { Panel } from "@/components/portal/ui";
 import { Checkbox, Field, Input, Textarea } from "@/components/ui";
 import { resolveMediaUrl } from "@/lib/storage/media";
@@ -34,7 +36,10 @@ export default async function AdminConsultantDetailPage({
     .limit(1);
   if (!consultant) notFound();
 
-  const photoUrl = await resolveMediaUrl(consultant.photoUrl);
+  const [photoUrl, expertiseSuggestions] = await Promise.all([
+    resolveMediaUrl(consultant.photoUrl),
+    listExpertiseSuggestions(),
+  ]);
   const [experienceFileUrls, educationFileUrls] = await Promise.all([
     Promise.all((consultant.experience ?? []).map((e) => resolveMediaUrl(e.attachment))),
     Promise.all((consultant.education ?? []).map((e) => resolveMediaUrl(e.attachment))),
@@ -53,15 +58,29 @@ export default async function AdminConsultantDetailPage({
 
       <Panel>
         <ActionForm action={saveConsultant} submitLabel="Save changes" hiddenFields={{ id: consultant.id }}>
-          <Field label="Name" className="sm:col-span-2">
-            <Input name="name" defaultValue={consultant.name} required />
+          <Field label="First name">
+            <Input
+              name="firstName"
+              defaultValue={consultant.firstName ?? consultant.name.split(" ")[0] ?? ""}
+              required
+            />
+          </Field>
+          <Field label="Last name">
+            <Input
+              name="lastName"
+              defaultValue={consultant.lastName ?? consultant.name.split(" ").slice(1).join(" ")}
+            />
           </Field>
           <Field
             label="Areas of expertise"
-            hint="Comma-separated — e.g. Site Selection, Franchise Structuring"
+            hint="Press Enter to add one, or paste a comma-separated list"
             className="sm:col-span-2"
           >
-            <Input name="expertise" defaultValue={consultant.expertise?.join(", ") ?? ""} />
+            <TagInput
+              name="expertise"
+              initial={consultant.expertise ?? []}
+              suggestions={expertiseSuggestions}
+            />
           </Field>
           <Field label="Years of experience">
             <Input name="yearsExperience" type="number" min={0} defaultValue={consultant.yearsExperience ?? ""} />

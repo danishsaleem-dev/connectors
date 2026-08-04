@@ -415,6 +415,12 @@ export type ConsultantEducation = {
 
 export const consultants = pgTable("consultants", {
   id: uuid("id").defaultRandom().primaryKey(),
+  /** `name` stays the source of truth for display/sort/search everywhere
+   * else in the codebase — it's just computed from these two on every save
+   * (see saveConsultant) rather than reconstructed by guessing where a
+   * single string splits, which breaks on multi-word first or last names. */
+  firstName: text("first_name"),
+  lastName: text("last_name"),
   name: text("name").notNull(),
   /** Public URL handle — /consultants/<slug>. Generated from the name once,
    * on create, then left alone: renaming a consultant shouldn't silently

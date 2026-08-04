@@ -482,10 +482,14 @@ export async function saveConsultant(
   try {
     await requireAdminUser();
     const id = str(formData, "id");
-    const name = str(formData, "name");
-    if (!name) return { ok: false, error: "Enter a name." };
+    const firstName = str(formData, "firstName");
+    const lastName = str(formData, "lastName");
+    if (!firstName) return { ok: false, error: "Enter a first name." };
+    const name = [firstName, lastName].filter(Boolean).join(" ");
 
     const values = {
+      firstName,
+      lastName,
       name,
       photoUrl: str(formData, "photoUrl"),
       expertise: list(formData, "expertise"),

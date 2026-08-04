@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/current-user";
+import { listExpertiseSuggestions } from "@/lib/db/queries";
 import { ActionForm } from "@/components/portal/ActionForm";
 import { MediaPicker } from "@/components/portal/MediaPicker";
 import { PortalHeader } from "@/components/portal/PortalHeader";
 import { RepeatableEntries } from "@/components/portal/RepeatableEntries";
+import { TagInput } from "@/components/portal/TagInput";
 import { Panel } from "@/components/portal/ui";
 import { Checkbox, Field, Input, Textarea } from "@/components/ui";
 import { saveConsultant } from "@/lib/portal/actions";
@@ -16,6 +18,7 @@ export const metadata: Metadata = {
 
 export default async function AdminConsultantNewPage() {
   await requireAdmin();
+  const expertiseSuggestions = await listExpertiseSuggestions();
 
   return (
     <div>
@@ -35,15 +38,18 @@ export default async function AdminConsultantNewPage() {
           pendingLabel="Adding…"
           successMessage="Consultant added — find them in the list, or add another below."
         >
-          <Field label="Name" className="sm:col-span-2">
-            <Input name="name" required placeholder="e.g. Priya Anand" />
+          <Field label="First name">
+            <Input name="firstName" required placeholder="e.g. Priya" />
+          </Field>
+          <Field label="Last name">
+            <Input name="lastName" placeholder="e.g. Anand" />
           </Field>
           <Field
             label="Areas of expertise"
-            hint="Comma-separated — e.g. Site Selection, Franchise Structuring"
+            hint="Press Enter to add one, or paste a comma-separated list"
             className="sm:col-span-2"
           >
-            <Input name="expertise" placeholder="Site Selection, Franchise Structuring" />
+            <TagInput name="expertise" suggestions={expertiseSuggestions} placeholder="Site Selection, Franchise Structuring…" />
           </Field>
           <Field label="Years of experience">
             <Input name="yearsExperience" type="number" min={0} />
