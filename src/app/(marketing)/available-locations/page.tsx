@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getCurrentContext } from "@/lib/auth/current-user";
 import { listAllProperties } from "@/lib/db/queries";
-import { LocationCard } from "@/components/LocationCard";
+import { LocationCard, LOCATION_CARD_WIDTH } from "@/components/LocationCard";
 import { Photo } from "@/components/Photo";
 import { Reveal } from "@/components/Reveal";
 import { Eyebrow, Section } from "@/components/ui";
@@ -95,9 +95,12 @@ async function LocationsGrid({ viewerIsBrand }: { viewerIsBrand: boolean }) {
   }
 
   return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    /* Flex-wrap rather than a fixed grid: a partial last row centres itself
+       instead of hanging off the left edge with dead space beside it, which
+       is what any listing count that isn't a multiple of four produces. */
+    <div className="flex flex-wrap justify-center gap-5">
       {locations.map((loc, i) => (
-        <Reveal key={loc.id} i={i % 3}>
+        <Reveal key={loc.id} i={i % 4} className={LOCATION_CARD_WIDTH}>
           <LocationCard location={loc} viewerIsBrand={viewerIsBrand} />
         </Reveal>
       ))}
@@ -107,14 +110,14 @@ async function LocationsGrid({ viewerIsBrand }: { viewerIsBrand: boolean }) {
 
 function LocationsSkeleton() {
   return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: 6 }).map((_, i) => (
+    <div className="flex flex-wrap justify-center gap-5">
+      {Array.from({ length: 8 }).map((_, i) => (
         <div
           key={i}
-          className="animate-pulse overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]"
+          className={`${LOCATION_CARD_WIDTH} animate-pulse overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)]`}
         >
           <div className="aspect-[4/3] bg-[var(--surface-sunken)]" />
-          <div className="space-y-2.5 p-5">
+          <div className="space-y-2.5 p-4">
             <div className="h-4 w-2/3 rounded bg-[var(--surface-sunken)]" />
             <div className="h-3 w-1/3 rounded bg-[var(--surface-sunken)]" />
           </div>

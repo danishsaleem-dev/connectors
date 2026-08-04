@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Lock, Maximize2, MapPin, Ruler } from "lucide-react";
+import { Maximize2, MapPin, Ruler } from "lucide-react";
 import { ActionForm } from "@/components/portal/ActionForm";
 import { Modal } from "@/components/Modal";
 import { Pill } from "@/components/portal/ui";
@@ -23,6 +23,12 @@ export type LocationCardData = {
   description: string | null;
   photoUrls: string[];
 };
+
+/** Width of one card in the listing grids. The subtractions are the gap-5
+ * those grids use (1.25rem × the number of gutters in the row), so 2 / 3 / 4
+ * cards land exactly on the row with no rounding drift. */
+export const LOCATION_CARD_WIDTH =
+  "w-full sm:w-[calc((100%-1.25rem)/2)] md:w-[calc((100%-2.5rem)/3)] lg:w-[calc((100%-3.75rem)/4)]";
 
 /** Basic teaser is public; the full profile and the enquiry form only ever
  * render for a viewer already confirmed server-side to be a brand — an
@@ -58,38 +64,26 @@ export function LocationCard({
               <MapPin size={28} />
             </div>
           )}
-          {/* The frosting is a centred panel rather than a full-image blur —
-              the photo itself stays legible, only the badge area behind the
-              lock is obscured. */}
-          {!viewerIsBrand && (
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <div className="flex flex-col items-center gap-2.5 rounded-2xl border border-white/20 bg-ink/25 px-5 py-4 text-center text-white shadow-[0_16px_40px_-24px_rgba(20,20,26,0.9)] backdrop-blur-lg">
-                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/20">
-                  <Lock size={18} />
-                </span>
-                <span className="max-w-[11rem] text-xs leading-snug">
-                  Sign in as a brand to view this property
-                </span>
-              </div>
-            </div>
-          )}
-          <div className="absolute left-3 top-3">
+          <div className="absolute left-2.5 top-2.5">
             <Pill tone="green">{PROPERTY_STATUS_LABEL[location.status] ?? location.status}</Pill>
           </div>
-          <div className="absolute right-3 top-3">
-            <span className="rounded-full bg-white/95 px-3 py-1 text-xs font-medium text-ink backdrop-blur-sm">
+          <div className="absolute right-2.5 top-2.5">
+            <span className="rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-medium text-ink backdrop-blur-sm">
               {PROPERTY_TYPE_LABEL[location.propertyType] ?? location.propertyType}
             </span>
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col p-5">
-          <h3 className="font-display text-lg leading-snug text-balance">
+        {/* Sized for a four-across grid: the title is clamped to two lines
+            and the meta row pinned to the bottom with mt-auto, so cards in a
+            row stay the same height whatever their copy length. */}
+        <div className="flex flex-1 flex-col p-4">
+          <h3 className="font-display line-clamp-2 text-base leading-snug text-balance">
             {location.title}
           </h3>
-          <p className="mt-1.5 inline-flex items-start gap-1.5 text-sm text-[var(--muted)]">
-            <MapPin size={14} className="mt-0.5 shrink-0 text-violet-600" />
-            <span>
+          <p className="mt-1.5 flex items-start gap-1.5 text-[13px] leading-snug text-[var(--muted)]">
+            <MapPin size={13} className="mt-0.5 shrink-0 text-violet-600" />
+            <span className="line-clamp-2">
               {[location.area, location.city, location.country]
                 .filter(Boolean)
                 .join(", ")}
@@ -97,16 +91,16 @@ export function LocationCard({
           </p>
 
           {(location.sizeSqft != null || location.dimensions) && (
-            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-[var(--border)] pt-4 text-sm text-[var(--muted)]">
+            <div className="mt-auto flex flex-wrap gap-x-4 gap-y-1.5 border-t border-[var(--border)] pt-3.5 text-xs text-[var(--muted)]">
               {location.sizeSqft != null && (
                 <span className="inline-flex items-center gap-1.5">
-                  <Maximize2 size={14} className="text-violet-600" />
+                  <Maximize2 size={13} className="text-violet-600" />
                   {location.sizeSqft.toLocaleString()} sq ft
                 </span>
               )}
               {location.dimensions && (
                 <span className="inline-flex items-center gap-1.5">
-                  <Ruler size={14} className="text-violet-600" />
+                  <Ruler size={13} className="text-violet-600" />
                   {location.dimensions}
                 </span>
               )}
