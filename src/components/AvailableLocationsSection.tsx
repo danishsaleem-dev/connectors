@@ -10,10 +10,10 @@ const PREVIEW_COUNT = 6;
 
 /**
  * Embeds the same browsing experience as the public /available-locations
- * page — same LocationCard, same brand-only gating (blurred image + locked
- * modal for anyone not signed in as a brand) — as a preview on an audience
- * page, rather than duplicating the full list. Links out to the full page
- * when there's more to see than the preview shows.
+ * page — same LocationCard, same brand-only gating (locked overlay on the
+ * photo + locked modal for anyone not signed in as a brand) — as a preview
+ * on an audience page, rather than duplicating the full list. Links out to
+ * the full page when there's more to see than the preview shows.
  *
  * The listing/image-resolving work is Suspense-boundaried into its own
  * child so a slow Supabase round-trip (signing every photo, one Storage

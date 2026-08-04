@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { clsx } from "clsx";
 import { Lock, Maximize2, MapPin, Ruler } from "lucide-react";
 import { ActionForm } from "@/components/portal/ActionForm";
 import { Modal } from "@/components/Modal";
@@ -52,24 +51,23 @@ export function LocationCard({
             <img
               src={cover}
               alt=""
-              className={clsx(
-                "h-full w-full object-cover transition-transform duration-700",
-                !viewerIsBrand && "scale-110 blur-md",
-                viewerIsBrand && "group-hover:scale-105",
-              )}
+              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-[var(--muted)]">
               <MapPin size={28} />
             </div>
           )}
+          {/* The frosting is a centred panel rather than a full-image blur —
+              the photo itself stays legible, only the badge area behind the
+              lock is obscured. */}
           {!viewerIsBrand && (
-            <div className="absolute inset-0 flex items-center justify-center bg-ink/20">
-              <div className="flex flex-col items-center gap-2.5 px-4 text-center text-white">
-                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm">
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="flex flex-col items-center gap-2.5 rounded-2xl border border-white/20 bg-ink/25 px-5 py-4 text-center text-white shadow-[0_16px_40px_-24px_rgba(20,20,26,0.9)] backdrop-blur-lg">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/20">
                   <Lock size={18} />
                 </span>
-                <span className="max-w-[11rem] text-xs leading-snug opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                <span className="max-w-[11rem] text-xs leading-snug">
                   Sign in as a brand to view this property
                 </span>
               </div>
@@ -86,13 +84,17 @@ export function LocationCard({
         </div>
 
         <div className="flex flex-1 flex-col p-5">
-          <h3 className="font-display text-lg">
-            {location.city}
-            {location.country ? `, ${location.country}` : ""}
+          <h3 className="font-display text-lg leading-snug text-balance">
+            {location.title}
           </h3>
-          {location.area && (
-            <p className="mt-1 text-sm text-[var(--muted)]">{location.area}</p>
-          )}
+          <p className="mt-1.5 inline-flex items-start gap-1.5 text-sm text-[var(--muted)]">
+            <MapPin size={14} className="mt-0.5 shrink-0 text-violet-600" />
+            <span>
+              {[location.area, location.city, location.country]
+                .filter(Boolean)
+                .join(", ")}
+            </span>
+          </p>
 
           {(location.sizeSqft != null || location.dimensions) && (
             <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-[var(--border)] pt-4 text-sm text-[var(--muted)]">
