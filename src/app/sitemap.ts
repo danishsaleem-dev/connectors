@@ -1,9 +1,21 @@
 import type { MetadataRoute } from "next";
 import { divisions } from "@/lib/content/divisions";
+import { vendorServices } from "@/lib/content/vendor-services";
 import { SITE_URL } from "@/lib/seo";
 import { audiences } from "@/lib/site";
 
-const STATIC_ROUTES = ["/", "/about", "/solutions", "/app", "/contact"];
+const STATIC_ROUTES = [
+  "/",
+  "/about",
+  "/solutions",
+  "/app",
+  "/contact",
+  "/consultants",
+  "/partners",
+  "/vendor-services",
+  "/become-a-vendor",
+  "/available-locations",
+];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
@@ -26,5 +38,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.6,
   }));
 
-  return [...staticEntries, ...audienceEntries, ...divisionEntries];
+  const vendorServiceEntries = vendorServices.map((s) => ({
+    url: `${SITE_URL}/vendor-services/${s.slug}`,
+    lastModified,
+    priority: 0.6,
+  }));
+
+  return [...staticEntries, ...audienceEntries, ...divisionEntries, ...vendorServiceEntries];
 }

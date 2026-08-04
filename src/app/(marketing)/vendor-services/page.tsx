@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { Photo } from "@/components/Photo";
 import { Reveal } from "@/components/Reveal";
 import { VendorCta } from "@/components/VendorCta";
@@ -74,8 +76,11 @@ export default function VendorServicesPage() {
           {vendorServices.map((service, i) => {
             const Icon = service.icon;
             return (
-              <Reveal key={service.title} i={i % 3}>
-                <div className="flex h-full flex-col rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 transition-all hover:border-violet-400 hover:shadow-[0_28px_56px_-32px_rgba(20,20,26,0.3)]">
+              <Reveal key={service.slug} i={i % 3}>
+                <Link
+                  href={`/vendor-services/${service.slug}`}
+                  className="group flex h-full flex-col rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 transition-all hover:border-violet-400 hover:shadow-[0_28px_56px_-32px_rgba(20,20,26,0.3)]"
+                >
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
                     <Icon size={20} />
                   </span>
@@ -83,7 +88,11 @@ export default function VendorServicesPage() {
                   <p className="mt-2.5 text-sm leading-relaxed text-[var(--muted)] text-pretty">
                     {service.body}
                   </p>
-                </div>
+                  <span className="mt-auto flex items-center gap-1.5 pt-5 text-sm text-violet-600 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                    Explore service
+                    <ArrowUpRight size={15} />
+                  </span>
+                </Link>
               </Reveal>
             );
           })}
