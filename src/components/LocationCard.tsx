@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { clsx } from "clsx";
-import { ArrowUpRight, Maximize2, MapPin, Ruler } from "lucide-react";
+import { Lock, Maximize2, MapPin, Ruler } from "lucide-react";
 import { ActionForm } from "@/components/portal/ActionForm";
 import { Modal } from "@/components/Modal";
 import { Pill } from "@/components/portal/ui";
@@ -53,13 +53,26 @@ export function LocationCard({
               src={cover}
               alt=""
               className={clsx(
-                "h-full w-full object-cover transition-transform duration-700 group-hover:scale-105",
-                !viewerIsBrand && "scale-110 blur-md group-hover:scale-110",
+                "h-full w-full object-cover transition-transform duration-700",
+                !viewerIsBrand && "scale-110 blur-md",
+                viewerIsBrand && "group-hover:scale-105",
               )}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-[var(--muted)]">
               <MapPin size={28} />
+            </div>
+          )}
+          {!viewerIsBrand && (
+            <div className="absolute inset-0 flex items-center justify-center bg-ink/20">
+              <div className="flex flex-col items-center gap-2.5 px-4 text-center text-white">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm">
+                  <Lock size={18} />
+                </span>
+                <span className="max-w-[11rem] text-xs leading-snug opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                  Sign in as a brand to view this property
+                </span>
+              </div>
             </div>
           )}
           <div className="absolute left-3 top-3">
@@ -97,11 +110,6 @@ export function LocationCard({
               )}
             </div>
           )}
-
-          <span className="mt-auto flex items-center gap-1.5 pt-5 text-sm text-violet-600 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-            View details
-            <ArrowUpRight size={15} />
-          </span>
         </div>
       </button>
 

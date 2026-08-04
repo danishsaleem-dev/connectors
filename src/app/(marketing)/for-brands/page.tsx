@@ -7,6 +7,7 @@ import { AvailableLocationsSection } from "@/components/AvailableLocationsSectio
 import { BrandEnquiryForm } from "@/components/forms/BrandEnquiryForm";
 import { FaqVideoSection } from "@/components/FaqVideoSection";
 import { GatedForm } from "@/components/GatedForm";
+import { JoinCommunityCta } from "@/components/JoinCommunityCta";
 import { TestimonialSection } from "@/components/TestimonialSection";
 import { VendorCta } from "@/components/VendorCta";
 import { IndustriesMarquee } from "@/components/IndustriesMarquee";
@@ -40,6 +41,8 @@ export default function ForBrandsPage() {
       />
 
       <AvailableLocationsSection />
+
+      <JoinCommunityCta />
 
       <AudienceGallery
         eyebrow="Where brands expand"
