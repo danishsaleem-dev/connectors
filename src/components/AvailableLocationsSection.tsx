@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { getCurrentContext } from "@/lib/auth/current-user";
-import { listAllProperties } from "@/lib/db/queries";
+import { listAllProperties, listFavoritePropertyIds } from "@/lib/db/queries";
 import { resolveMediaUrls } from "@/lib/storage/media";
 import { LocationCard, LOCATION_CARD_WIDTH } from "@/components/LocationCard";
 import { Reveal } from "@/components/Reveal";
@@ -52,8 +52,12 @@ export function AvailableLocationsSection() {
 async function LocationsGrid() {
   const context = await getCurrentContext();
   const viewerIsBrand = context?.organization?.type === "brand";
+  const organizationId = context?.organization?.id;
 
-  const all = await listAllProperties();
+  const [all, favoriteIds] = await Promise.all([
+    listAllProperties(),
+    organizationId ? listFavoritePropertyIds(organizationId) : Promise.resolve(new Set<string>()),
+  ]);
   const available = all.filter((p) => p.status === "available");
   const preview = available.slice(0, PREVIEW_COUNT);
   const locations = await Promise.all(
@@ -91,7 +95,11 @@ async function LocationsGrid() {
           <div className="flex flex-wrap justify-center gap-5">
             {locations.map((loc, i) => (
               <Reveal key={loc.id} i={i % 4} className={LOCATION_CARD_WIDTH}>
-                <LocationCard location={loc} viewerIsBrand={viewerIsBrand} />
+                <LocationCard
+                  location={loc}
+                  viewerIsBrand={viewerIsBrand}
+                  isFavorited={favoriteIds.has(loc.id)}
+                />
               </Reveal>
             ))}
           </div>

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getCurrentContext } from "@/lib/auth/current-user";
-import { listAllProperties } from "@/lib/db/queries";
+import { listAllProperties, listFavoritePropertyIds } from "@/lib/db/queries";
 import { LocationCard, LOCATION_CARD_WIDTH } from "@/components/LocationCard";
 import { Photo } from "@/components/Photo";
 import { Reveal } from "@/components/Reveal";
@@ -21,6 +21,7 @@ export default async function AvailableLocationsPage() {
   // render rather than adding a second Suspense boundary for it.
   const context = await getCurrentContext();
   const viewerIsBrand = context?.organization?.type === "brand";
+  const organizationId = context?.organization?.id;
 
   return (
     <>
@@ -65,15 +66,24 @@ export default async function AvailableLocationsPage() {
             image, and streaming just this grid in keeps the rest of the
             page from waiting on it. */}
         <Suspense fallback={<LocationsSkeleton />}>
-          <LocationsGrid viewerIsBrand={viewerIsBrand} />
+          <LocationsGrid viewerIsBrand={viewerIsBrand} organizationId={organizationId} />
         </Suspense>
       </Section>
     </>
   );
 }
 
-async function LocationsGrid({ viewerIsBrand }: { viewerIsBrand: boolean }) {
-  const all = await listAllProperties();
+async function LocationsGrid({
+  viewerIsBrand,
+  organizationId,
+}: {
+  viewerIsBrand: boolean;
+  organizationId?: string;
+}) {
+  const [all, favoriteIds] = await Promise.all([
+    listAllProperties(),
+    organizationId ? listFavoritePropertyIds(organizationId) : Promise.resolve(new Set<string>()),
+  ]);
   const available = all.filter((p) => p.status === "available");
   const locations = await Promise.all(
     available.map(async (p) => ({
@@ -101,7 +111,11 @@ async function LocationsGrid({ viewerIsBrand }: { viewerIsBrand: boolean }) {
     <div className="flex flex-wrap justify-center gap-5">
       {locations.map((loc, i) => (
         <Reveal key={loc.id} i={i % 4} className={LOCATION_CARD_WIDTH}>
-          <LocationCard location={loc} viewerIsBrand={viewerIsBrand} />
+          <LocationCard
+            location={loc}
+            viewerIsBrand={viewerIsBrand}
+            isFavorited={favoriteIds.has(loc.id)}
+          />
         </Reveal>
       ))}
     </div>
