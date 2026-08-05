@@ -95,7 +95,7 @@ export default async function AvailableLocationsPage({
             photo to a signed Storage URL is a real network round-trip per
             image, and streaming just this grid in keeps the rest of the
             page from waiting on it. */}
-        <Suspense fallback={<LocationsSkeleton />} key={JSON.stringify(filters)}>
+        <Suspense fallback={<LocationsSkeleton />}>
           <LocationsGrid viewerIsBrand={viewerIsBrand} organizationId={organizationId} filters={filters} />
         </Suspense>
       </Section>

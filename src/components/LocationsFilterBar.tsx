@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { Field, Input, Select } from "@/components/ui";
@@ -11,9 +11,14 @@ const SEARCH_DEBOUNCE_MS = 350;
 
 /** Every change navigates immediately — selects on their change event, the
  * search box debounced so it doesn't push a new URL per keystroke. The
- * actual filtering happens server-side in matchesLocationFilters (a plain
- * module, not this one, so the Server Component page can still call it —
- * "use client" here would otherwise drag that function along too). */
+ * navigation itself is wrapped in startTransition: without it, React swaps
+ * straight to the grid's Suspense fallback (a full skeleton flash) the
+ * instant the URL changes; inside a transition it keeps the current listings
+ * on screen and only swaps once the filtered set is ready, so it reads as
+ * the listings updating in place rather than the page reloading. The actual
+ * filtering happens server-side in matchesLocationFilters (a plain module,
+ * not this one, so the Server Component page can still call it — "use
+ * client" here would otherwise drag that function along too). */
 export function LocationsFilterBar({
   cities,
   filters,
@@ -25,12 +30,16 @@ export function LocationsFilterBar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   function setParam(name: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
     if (value) params.set(name, value);
     else params.delete(name);
-    router.push(params.size ? `${pathname}?${params.toString()}` : pathname, { scroll: false });
+    const next = params.size ? `${pathname}?${params.toString()}` : pathname;
+    startTransition(() => {
+      router.push(next, { scroll: false });
+    });
   }
 
   function onSearchChange(value: string) {
@@ -41,7 +50,9 @@ export function LocationsFilterBar({
   const hasActiveFilters = Object.values(filters).some(Boolean);
 
   return (
-    <div className="mb-10 grid gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[0_20px_48px_-32px_rgba(20,20,26,0.25)] sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr_auto] lg:items-end lg:gap-4">
+    <div
+      className={`mb-10 grid gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 shadow-[0_20px_48px_-32px_rgba(20,20,26,0.25)] transition-opacity sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1fr_auto] lg:items-end lg:gap-4 ${isPending ? "opacity-60" : ""}`}
+    >
       <Field label="Search" className="lg:col-span-1">
         <div className="relative">
           <Search
@@ -109,7 +120,7 @@ export function LocationsFilterBar({
       {hasActiveFilters && (
         <button
           type="button"
-          onClick={() => router.push(pathname, { scroll: false })}
+          onClick={() => startTransition(() => router.push(pathname, { scroll: false }))}
           className="flex items-center justify-center gap-1.5 rounded-full border border-[var(--border)] px-4 py-2.5 text-sm font-medium text-[var(--muted)] transition-colors hover:border-violet-400 hover:text-violet-600 lg:w-auto"
         >
           <X size={14} /> Clear
