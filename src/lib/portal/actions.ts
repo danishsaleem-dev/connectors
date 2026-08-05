@@ -352,6 +352,10 @@ export async function saveProperty(
       description: str(formData, "description"),
       photos: list(formData, "photos"),
       video: str(formData, "video"),
+      // Admin-only curation flag — a landlord's own property form has no
+      // "Featured" checkbox, so this must never be written from their save,
+      // or every edit would silently un-feature an admin-curated listing.
+      ...(user.isAdmin ? { featured: bool(formData, "featured") } : {}),
       // Retired from every property form's UI, but a save shouldn't silently
       // wipe historical data on records that still have it — only touch
       // these columns when a form actually posts them.
@@ -622,6 +626,39 @@ export async function setPropertyStatus(
     return { ok: true };
   } catch (err) {
     return fail("setPropertyStatus", err, "Couldn't update that property.");
+  }
+}
+
+/** Star toggle on the admin locations row — flips based on the row's current
+ * value rather than taking a target value, since it's a single-icon button
+ * with no separate on/off control to read a value from. */
+export async function toggleFeatured(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdminUser();
+    const id = str(formData, "id");
+    if (!id) return { ok: false, error: "Missing property." };
+
+    const [property] = await getDb()
+      .select({ featured: properties.featured })
+      .from(properties)
+      .where(eq(properties.id, id))
+      .limit(1);
+    if (!property) return { ok: false, error: "Property not found." };
+
+    await getDb()
+      .update(properties)
+      .set({ featured: !property.featured })
+      .where(eq(properties.id, id));
+
+    revalidatePortal();
+    revalidatePath("/available-locations");
+    revalidatePath("/for-brands");
+    return { ok: true };
+  } catch (err) {
+    return fail("toggleFeatured", err, "Couldn't update that property.");
   }
 }
 

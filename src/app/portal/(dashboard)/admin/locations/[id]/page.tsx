@@ -93,12 +93,13 @@ export default async function AdminLocationDetailPage({
           <Field label="Dimensions" hint="e.g. 40ft x 60ft">
             <Input name="dimensions" defaultValue={location.dimensions ?? ""} />
           </Field>
-          <div className="flex items-end pb-2 sm:col-span-2">
+          <div className="flex flex-wrap items-end gap-x-6 gap-y-2 pb-2 sm:col-span-2">
             <Checkbox
               name="parkingAvailable"
               label="Parking available"
               defaultChecked={location.parkingAvailable}
             />
+            <Checkbox name="featured" label="Feature this listing" defaultChecked={location.featured} />
           </div>
           <Field label="Description" className="sm:col-span-2">
             <Textarea name="description" rows={3} defaultValue={location.description ?? ""} />

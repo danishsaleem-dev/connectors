@@ -230,7 +230,7 @@ function LocationDetailModal({
       </div>
 
       <div className="p-6 sm:p-8 lg:max-h-[85vh] lg:overflow-y-auto">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-4 pr-11">
           <div>
             <h2 className="font-display text-xl">{location.title}</h2>
             <p className="mt-1 text-sm text-violet-600">

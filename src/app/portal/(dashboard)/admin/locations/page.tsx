@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Star } from "lucide-react";
 import { requireAdmin } from "@/lib/auth/current-user";
 import { listAllProperties } from "@/lib/db/queries";
 import { ActionForm } from "@/components/portal/ActionForm";
@@ -7,7 +8,7 @@ import { ListToolbar, matchesQuery } from "@/components/portal/ListToolbar";
 import { PortalHeader } from "@/components/portal/PortalHeader";
 import { EmptyState, ListRow, formatMoney } from "@/components/portal/ui";
 import { ButtonLink, Select } from "@/components/ui";
-import { setPropertyStatus } from "@/lib/portal/actions";
+import { setPropertyStatus, toggleFeatured } from "@/lib/portal/actions";
 import { PROPERTY_STATUS_LABEL, PROPERTY_TYPE_LABEL } from "@/lib/portal/domain";
 
 export const metadata: Metadata = {
@@ -62,10 +63,19 @@ export default async function AdminLocationsPage({
         ) : (
           rows.map((property) => {
             const rent = formatMoney(property.rentAmount, property.currency);
+
+            // Plain <form>, not an ActionForm — a single-icon fire-and-forget
+            // toggle doesn't need pending/error UI, same reasoning as the
+            // favorite star on the public LocationCard.
+            async function toggleFeaturedAction(formData: FormData) {
+              "use server";
+              await toggleFeatured({ ok: false }, formData);
+            }
+
             return (
               <ListRow
                 key={property.id}
-                // trailing holds a <form>, so the row itself isn't the link —
+                // trailing holds forms, so the row itself isn't the link —
                 // same reasoning as the accounts and org-type list pages.
                 title={
                   <Link
@@ -86,26 +96,43 @@ export default async function AdminLocationsPage({
                   .filter(Boolean)
                   .join(" · ")}
                 trailing={
-                  <ActionForm
-                    action={setPropertyStatus}
-                    submitLabel="Update"
-                    pendingLabel="…"
-                    successMessage="Updated."
-                    hiddenFields={{ id: property.id }}
-                    size="sm"
-                    variant="secondary"
-                    layout="inline"
-                  >
-                    <span className="w-36 shrink-0">
-                      <Select name="status" defaultValue={property.status}>
-                        {STATUS_OPTIONS.map((o) => (
-                          <option key={o.value} value={o.value}>
-                            {o.label}
-                          </option>
-                        ))}
-                      </Select>
-                    </span>
-                  </ActionForm>
+                  <div className="flex items-center gap-3">
+                    <form action={toggleFeaturedAction}>
+                      <input type="hidden" name="id" value={property.id} />
+                      <button
+                        type="submit"
+                        aria-label={property.featured ? "Remove from featured" : "Feature this listing"}
+                        aria-pressed={property.featured}
+                        title={property.featured ? "Featured" : "Feature this listing"}
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--muted)] transition-colors hover:text-amber-500"
+                      >
+                        <Star
+                          size={16}
+                          className={property.featured ? "fill-amber-400 text-amber-400" : undefined}
+                        />
+                      </button>
+                    </form>
+                    <ActionForm
+                      action={setPropertyStatus}
+                      submitLabel="Update"
+                      pendingLabel="…"
+                      successMessage="Updated."
+                      hiddenFields={{ id: property.id }}
+                      size="sm"
+                      variant="secondary"
+                      layout="inline"
+                    >
+                      <span className="w-36 shrink-0">
+                        <Select name="status" defaultValue={property.status}>
+                          {STATUS_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>
+                              {o.label}
+                            </option>
+                          ))}
+                        </Select>
+                      </span>
+                    </ActionForm>
+                  </div>
                 }
               />
             );

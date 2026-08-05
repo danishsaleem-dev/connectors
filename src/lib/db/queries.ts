@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, count, countDistinct, desc, eq, inArray, ne } from "drizzle-orm";
 import { getDb } from "./client";
 import {
   brandProfiles,
@@ -70,6 +70,7 @@ export async function listAllProperties() {
       floorLevel: properties.floorLevel,
       parkingAvailable: properties.parkingAvailable,
       status: properties.status,
+      featured: properties.featured,
       propertyType: properties.propertyType,
       rentAmount: properties.rentAmount,
       rentPeriod: properties.rentPeriod,
@@ -85,7 +86,18 @@ export async function listAllProperties() {
     })
     .from(properties)
     .innerJoin(organizations, eq(properties.organizationId, organizations.id))
-    .orderBy(desc(properties.createdAt));
+    .orderBy(desc(properties.featured), desc(properties.createdAt));
+}
+
+/** A single aggregate query — no per-row Storage calls — so the
+ * /available-locations hero can show live counts without giving up the fast,
+ * synchronous render the photo-resolving grid below it deliberately can't have. */
+export async function getLocationStats() {
+  const [row] = await getDb()
+    .select({ total: count(), cities: countDistinct(properties.city) })
+    .from(properties)
+    .where(ne(properties.status, "withdrawn"));
+  return row ?? { total: 0, cities: 0 };
 }
 
 /* ------------------------------------------------------------------ */

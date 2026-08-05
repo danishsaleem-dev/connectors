@@ -236,6 +236,10 @@ export const properties = pgTable("properties", {
   currency: varchar("currency", { length: 3 }).notNull().default("GBP"),
   availableFrom: text("available_from"),
   status: propertyStatusEnum("status").notNull().default("available"),
+  /** Admin-curated spotlight flag — featured listings sort first everywhere
+   * listAllProperties is consumed, including the /for-brands-style preview
+   * sections, so featuring a property is enough to surface it there. */
+  featured: boolean("featured").notNull().default(false),
   description: text("description"),
   /** Paste-in links for now — same convention as `documents.url` — rather
    * than a direct upload pipeline, which would need Vercel Blob wired in
