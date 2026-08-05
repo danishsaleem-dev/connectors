@@ -176,5 +176,7 @@ export async function register(
 export async function logout() {
   const store = await cookies();
   store.delete(COOKIE_NAME);
-  redirect("/portal/login");
+  // Plain homepage, not ?auth=login — re-prompting to sign in immediately
+  // after someone deliberately signed out is the wrong instinct.
+  redirect("/");
 }

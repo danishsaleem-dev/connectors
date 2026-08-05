@@ -42,7 +42,7 @@ export async function getCurrentContext() {
  * mis-navigated participant lands somewhere useful. */
 export async function requireAdmin() {
   const user = await getCurrentUser();
-  if (!user) redirect("/portal/login");
+  if (!user) redirect("/?auth=login");
   if (!user.isAdmin) redirect("/portal");
   return user;
 }
@@ -54,9 +54,9 @@ export async function requireAdmin() {
  */
 export async function requireParticipant({ allowOnboarding = false } = {}) {
   const context = await getCurrentContext();
-  if (!context) redirect("/portal/login");
+  if (!context) redirect("/?auth=login");
   if (context.user.isAdmin) redirect("/portal/admin");
-  if (!context.organization) redirect("/portal/login");
+  if (!context.organization) redirect("/?auth=login");
 
   if (!allowOnboarding && !context.organization.onboardingCompletedAt) {
     redirect("/portal/onboarding");

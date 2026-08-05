@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { clsx } from "clsx";
 import { Logo } from "@/components/Logo";
 import { Modal } from "@/components/Modal";
 import { OrbitField } from "@/components/OrbitField";
@@ -48,9 +49,17 @@ export function AuthModal() {
 
   const copy = COPY[view];
 
+  const isLogin = view === "login";
+
   return (
-    <Modal onClose={close} className="max-w-4xl overflow-hidden lg:grid lg:grid-cols-2">
-      <div className="relative hidden flex-col justify-between overflow-hidden bg-ink p-10 text-white lg:flex">
+    <Modal
+      onClose={close}
+      className={clsx(
+        "overflow-hidden lg:grid lg:grid-cols-2",
+        isLogin ? "max-w-4xl" : "max-w-5xl",
+      )}
+    >
+      <div className="relative hidden max-h-[85vh] flex-col justify-between overflow-hidden bg-ink p-10 text-white lg:flex">
         <OrbitField
           count={26}
           strokeWidth={0.25}
@@ -71,7 +80,7 @@ export function AuthModal() {
         </p>
       </div>
 
-      <div className="flex flex-col justify-center p-8 sm:p-10">
+      <div className="flex max-h-[85vh] flex-col justify-center overflow-y-auto p-8 sm:p-10">
         {view === "login" ? (
           <>
             <h2 className="font-display text-2xl">Sign in</h2>

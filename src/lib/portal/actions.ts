@@ -891,6 +891,25 @@ export async function resetUserPassword(
   }
 }
 
+export async function deleteUser(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    const admin = await requireAdminUser();
+    const userId = str(formData, "userId");
+    if (!userId) return { ok: false, error: "Missing account." };
+    if (userId === admin.id) return { ok: false, error: "You can't delete your own account." };
+
+    await getDb().delete(users).where(eq(users.id, userId));
+
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("deleteUser", err, "Couldn't remove that account.");
+  }
+}
+
 export async function createDocument(
   _prevState: ActionState,
   formData: FormData,

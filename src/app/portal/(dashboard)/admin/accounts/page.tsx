@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/current-user";
 import { getDb } from "@/lib/db/client";
 import { organizations, users } from "@/lib/db/schema";
+import { DeleteUserButton } from "@/components/portal/DeleteUserButton";
 import { ListToolbar, matchesQuery } from "@/components/portal/ListToolbar";
 import { PortalHeader } from "@/components/portal/PortalHeader";
 import { ResetPasswordButton } from "@/components/portal/ResetPasswordButton";
@@ -20,7 +21,7 @@ export default async function AdminAccountsPage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
-  await requireAdmin();
+  const currentUser = await requireAdmin();
   const { q } = await searchParams;
   const db = getDb();
 
@@ -78,6 +79,9 @@ export default async function AdminAccountsPage({
                       {user.isAdmin ? "Admin" : org ? orgTypeMeta(org.type).singular : "No org"}
                     </Pill>
                     <ResetPasswordButton userId={user.id} />
+                    {user.id !== currentUser.id && (
+                      <DeleteUserButton userId={user.id} name={user.name} />
+                    )}
                   </div>
                 }
               />

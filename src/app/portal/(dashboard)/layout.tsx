@@ -8,7 +8,7 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const context = await getCurrentContext();
-  if (!context) redirect("/portal/login");
+  if (!context) redirect("/?auth=login");
 
   const { user, organization } = context;
 

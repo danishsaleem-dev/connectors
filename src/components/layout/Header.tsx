@@ -5,9 +5,10 @@ import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Menu, User, X } from "lucide-react";
+import { ChevronDown, Menu, X } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { ButtonLink } from "@/components/ui";
+import { AccountMenu } from "@/components/layout/AccountMenu";
 import { divisions } from "@/lib/content/divisions";
 import { audiences } from "@/lib/site";
 
@@ -144,13 +145,7 @@ export function Header() {
               source order, so `hidden` from a later-appended className
               doesn't reliably beat it. */}
           <div className="hidden items-center gap-2 md:flex">
-            <Link
-              href={accountHref}
-              aria-label={session.signedIn ? "Go to your portal" : "Sign in"}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-600 text-white transition-colors hover:bg-violet-700"
-            >
-              <User size={17} />
-            </Link>
+            <AccountMenu />
             <ButtonLink href="/for-brands" size="sm">
               Start a conversation
             </ButtonLink>

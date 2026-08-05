@@ -52,9 +52,14 @@ export function RegisterForm({ lockedType }: { lockedType?: OrgType }) {
         </div>
       )}
 
-      <Field label={active.orgLabel}>
-        <Input name="organizationName" required />
-      </Field>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label={active.orgLabel}>
+          <Input name="organizationName" required />
+        </Field>
+        <Field label="Your name">
+          <Input name="name" required autoComplete="name" />
+        </Field>
+      </div>
 
       {/* Asked here rather than left to onboarding — discipline is what makes
           a new partner placeable, so the roster is useful from signup. */}
@@ -72,15 +77,15 @@ export function RegisterForm({ lockedType }: { lockedType?: OrgType }) {
           </Select>
         </Field>
       )}
-      <Field label="Your name">
-        <Input name="name" required autoComplete="name" />
-      </Field>
-      <Field label="Email">
-        <Input type="email" name="email" required autoComplete="email" />
-      </Field>
-      <Field label="Password" hint="At least 8 characters">
-        <Input type="password" name="password" required minLength={8} autoComplete="new-password" />
-      </Field>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Email">
+          <Input type="email" name="email" required autoComplete="email" />
+        </Field>
+        <Field label="Password" hint="At least 8 characters">
+          <Input type="password" name="password" required minLength={8} autoComplete="new-password" />
+        </Field>
+      </div>
 
       {state.error && (
         <p role="alert" className="text-sm text-red-600">
