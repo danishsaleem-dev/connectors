@@ -10,15 +10,26 @@ import { Textarea } from "@/components/ui";
  * scratchpad keyed on the account (not the organization), since admin has
  * no organization to key it on. Self-contained: reads the session itself,
  * so every dashboard page just drops in `<SavedNotes />` with no props.
+ *
+ * `title`/`className` default to how the dashboard overview pages embed it
+ * (as one panel among several, needing its own heading and top margin) — the
+ * dedicated /portal/notes page overrides both since PortalHeader already
+ * says "Notes" there.
  */
-export async function SavedNotes() {
+export async function SavedNotes({
+  title = "Saved notes",
+  className = "mt-6",
+}: {
+  title?: string;
+  className?: string;
+} = {}) {
   const user = await getCurrentUser();
   if (!user) return null;
 
   const items = await listNotes(user.id);
 
   return (
-    <Panel title="Saved notes" className="mt-6">
+    <Panel title={title} className={className}>
       <ActionForm
         action={createNote}
         submitLabel="Add note"

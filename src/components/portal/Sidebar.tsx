@@ -12,6 +12,7 @@ import {
   ChevronsRight,
   ClipboardList,
   Handshake,
+  Heart,
   Image as ImageIcon,
   Inbox,
   LayoutDashboard,
@@ -19,6 +20,7 @@ import {
   Mail,
   MapPin,
   MessageSquare,
+  StickyNote,
   Store,
   TrendingUp,
   UserCircle,
@@ -59,13 +61,17 @@ function participantNav(type: OrgType): NavItem[] {
   const nav: NavItem[] = [
     { href: "/portal", label: "Dashboard", icon: LayoutDashboard },
     { href: "/portal/profile", label: "Profile", icon: UserCircle },
+    { href: "/portal/notes", label: "Notes", icon: StickyNote },
   ];
 
   if (meta.listsProperties) {
     nav.push({ href: "/portal/properties", label: "My properties", icon: MapPin });
   }
   if (meta.browsesProperties) {
-    nav.push({ href: "/portal/locations", label: "Locations", icon: Store });
+    nav.push(
+      { href: "/portal/locations", label: "Locations", icon: Store },
+      { href: "/portal/saved-locations", label: "Saved Locations", icon: Heart },
+    );
   }
   if (meta.requestTypes.length > 0) {
     nav.push({ href: "/portal/requests", label: "My requests", icon: ClipboardList });
