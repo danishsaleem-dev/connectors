@@ -26,6 +26,7 @@ const PROFILE_TABLES = {
   developer: developerProfiles,
   investor: investorProfiles,
   vendor: vendorProfiles,
+  consultant: consultants,
 } as const;
 
 export async function getProfile(type: OrgType, organizationId: string) {

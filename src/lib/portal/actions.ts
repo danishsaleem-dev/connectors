@@ -30,6 +30,7 @@ import {
   type OrgType,
 } from "@/lib/db/schema";
 import { site } from "@/lib/site";
+import { uniqueConsultantSlug } from "./consultant-slug";
 import { slugify } from "./domain";
 import { requireAdminUser, requireOrgUser } from "./guards";
 
@@ -236,6 +237,25 @@ async function writeProfile(type: OrgType, organizationId: string, formData: For
           ...(str(formData, "cover") ? { coverUrl: str(formData, "cover") } : {}),
         })
         .where(eq(vendorProfiles.organizationId, organizationId));
+      break;
+    }
+    case "consultant": {
+      // Deliberately no isPublished/sortOrder/name here — those stay
+      // admin-only (see saveConsultant), same gate a self-service vendor's
+      // public directory entry doesn't get either until reviewed. Photo
+      // only written when actually chosen, same reasoning as brand's logo.
+      const photoPath = str(formData, "photo");
+      await db
+        .update(consultants)
+        .set({
+          expertise: list(formData, "expertise"),
+          yearsExperience: num(formData, "yearsExperience"),
+          bio: str(formData, "bio"),
+          experience: jsonEntries<ConsultantExperience>(formData, "experience"),
+          education: jsonEntries<ConsultantEducation>(formData, "education"),
+          ...(photoPath ? { photoUrl: photoPath } : {}),
+        })
+        .where(eq(consultants.organizationId, organizationId));
       break;
     }
   }
@@ -520,20 +540,6 @@ export async function saveConsultant(
   } catch (err) {
     return fail("saveConsultant", err, "Couldn't save that consultant.");
   }
-}
-
-/** Name-derived handle for the public profile URL, with a numeric suffix if
- * two consultants share a name — the column is unique, so a collision would
- * otherwise fail the insert outright. */
-async function uniqueConsultantSlug(name: string) {
-  const base = slugify(name) || "consultant";
-  const rows = await getDb().select({ slug: consultants.slug }).from(consultants);
-  const taken = new Set(rows.map((r) => r.slug).filter(Boolean));
-  if (!taken.has(base)) return base;
-  for (let i = 2; i < 100; i++) {
-    if (!taken.has(`${base}-${i}`)) return `${base}-${i}`;
-  }
-  return `${base}-${Date.now().toString(36)}`;
 }
 
 export async function deleteConsultant(

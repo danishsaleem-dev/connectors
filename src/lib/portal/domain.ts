@@ -85,6 +85,24 @@ export const ORG_TYPES: OrgTypeMeta[] = [
     listsProperties: false,
     browsesProperties: false,
   },
+  {
+    type: "consultant",
+    // Note: /portal/admin/consultants is a separate, hand-built module (the
+    // roster admins manage — see schema.ts) that shadows the generic
+    // /portal/admin/[orgType] route at this same slug, so this entry never
+    // actually drives that dynamic route. It exists so the generic
+    // profile/onboarding/admin-overview surfaces that key off every org
+    // type — which a consultant account passes through like any other —
+    // don't crash on a missing lookup.
+    slug: "consultants",
+    singular: "Consultant",
+    plural: "Consultants",
+    // Keeping their own roster profile current is the entire portal job —
+    // admin publishes it to the public page once reviewed.
+    requestTypes: [],
+    listsProperties: false,
+    browsesProperties: false,
+  },
 ];
 
 export function orgTypeMeta(type: OrgType): OrgTypeMeta {
@@ -106,6 +124,7 @@ export const SELF_SERVICE_TYPES: OrgType[] = [
   "developer",
   "investor",
   "vendor",
+  "consultant",
 ];
 
 /** URL-safe handle, used for consultant profile URLs and as a vendor's

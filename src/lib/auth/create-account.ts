@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
 import {
   brandProfiles,
+  consultants,
   developerProfiles,
   franchiseeProfiles,
   investorProfiles,
@@ -12,6 +13,7 @@ import {
   vendorProfiles,
   type OrgType,
 } from "@/lib/db/schema";
+import { uniqueConsultantSlug } from "@/lib/portal/consultant-slug";
 import { SELF_SERVICE_TYPES, VENDOR_DISCIPLINE_LABEL, slugify } from "@/lib/portal/domain";
 import { hashPassword } from "./password";
 
@@ -71,6 +73,22 @@ async function createProfileFor(
           : {}),
       });
       break;
+    case "consultant": {
+      // orgName doubles as the person's own name here — a consultant signs
+      // up as themselves, not a company (see RegisterForm's "Full name"
+      // label for this type). Same public-slug convention as the admin
+      // "add consultant" form, so a link looks the same either way it was
+      // created; the row stays unpublished until an admin reviews it.
+      const [firstName, ...rest] = orgName.split(" ");
+      await db.insert(consultants).values({
+        organizationId,
+        firstName: firstName || orgName,
+        lastName: rest.join(" ") || null,
+        name: orgName,
+        slug: await uniqueConsultantSlug(orgName),
+      });
+      break;
+    }
   }
 }
 

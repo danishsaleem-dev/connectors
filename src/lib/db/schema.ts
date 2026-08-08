@@ -29,6 +29,7 @@ export const orgTypeEnum = pgEnum("org_type", [
   "developer",
   "investor",
   "vendor",
+  "consultant",
 ]);
 
 /** The trades in the Partners Program — designers, architects and the rest
@@ -397,9 +398,11 @@ export const notes = pgTable("notes", {
 
 /** Connectors' own consultants, offered as a service to brands, franchisees
  * and landlords — distinct from vendorProfiles (the Partners Program's
- * external, self-onboarding designers/architects/contractors). No
- * organization owns a row here; admins manage the roster directly, and
- * isPublished gates what the public /consultants page shows. */
+ * external, self-onboarding designers/architects/contractors). A row is
+ * either admin-authored (organizationId null) or owned by a self-registered
+ * consultant account (organizationId set, via createProfileFor) — either
+ * way isPublished gates what the public /consultants page shows, so a
+ * self-registered profile stays invisible until an admin reviews it. */
 export type ConsultantExperience = {
   title: string;
   yearFrom: string;
@@ -419,6 +422,12 @@ export type ConsultantEducation = {
 
 export const consultants = pgTable("consultants", {
   id: uuid("id").defaultRandom().primaryKey(),
+  /** Null for admin-authored rows. Set once at signup for a self-registered
+   * consultant, and unique so `getProfile`/`writeProfile` can key off it the
+   * same way every other participant type's profile table does. */
+  organizationId: uuid("organization_id")
+    .unique()
+    .references(() => organizations.id, { onDelete: "cascade" }),
   /** `name` stays the source of truth for display/sort/search everywhere
    * else in the codebase — it's just computed from these two on every save
    * (see saveConsultant) rather than reconstructed by guessing where a

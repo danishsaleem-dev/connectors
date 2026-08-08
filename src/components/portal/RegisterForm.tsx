@@ -16,6 +16,7 @@ const CHOICES: { value: OrgType; label: string; orgLabel: string }[] = [
   { value: "developer", label: "Mall / Developer", orgLabel: "Company name" },
   { value: "investor", label: "Investor", orgLabel: "Company / individual name" },
   { value: "vendor", label: "Vendor", orgLabel: "Studio / company name" },
+  { value: "consultant", label: "Consultant", orgLabel: "Full name" },
 ];
 
 export function RegisterForm({ lockedType }: { lockedType?: OrgType }) {

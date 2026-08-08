@@ -23,6 +23,8 @@ const INTRO: Record<string, string> = {
   landlord: "Tell us about your portfolio, then list your available space for brands to browse.",
   developer: "Tell us about your scheme, then list your available space for brands to browse.",
   investor: "Tell us your ticket size and sectors, then submit a request — our team will follow up directly.",
+  consultant:
+    "Tell us about yourself. Add your experience and degrees below — our team reviews every profile before it goes live on the public consultants page.",
 };
 
 export default async function OnboardingPage() {
@@ -32,9 +34,28 @@ export default async function OnboardingPage() {
 
   const meta = orgTypeMeta(organization.type);
   const profile = await getProfile(organization.type, organization.id);
+  const logoKey = organization.type === "consultant" ? "photoUrl" : "logoUrl";
   const logoPath =
-    organization.type === "brand" && typeof profile?.logoUrl === "string" ? profile.logoUrl : null;
+    (organization.type === "brand" || organization.type === "consultant") &&
+    typeof profile?.[logoKey] === "string"
+      ? (profile[logoKey] as string)
+      : null;
   const logoUrl = await resolveMediaUrl(logoPath);
+  const [experienceFileUrls, educationFileUrls] =
+    organization.type === "consultant"
+      ? await Promise.all([
+          Promise.all(
+            ((profile?.experience as { attachment?: string }[] | undefined) ?? []).map((e) =>
+              resolveMediaUrl(e.attachment),
+            ),
+          ),
+          Promise.all(
+            ((profile?.education as { attachment?: string }[] | undefined) ?? []).map((e) =>
+              resolveMediaUrl(e.attachment),
+            ),
+          ),
+        ])
+      : [[], []];
 
   return (
     <div>
@@ -69,6 +90,8 @@ export default async function OnboardingPage() {
             profile={profile}
             organizationId={organization.id}
             logoPreview={logoPath ? { path: logoPath, url: logoUrl } : null}
+            experienceFileUrls={experienceFileUrls}
+            educationFileUrls={educationFileUrls}
           />
         </ActionForm>
       </Panel>

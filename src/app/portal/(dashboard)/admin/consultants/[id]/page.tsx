@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth/current-user";
 import { getDb } from "@/lib/db/client";
 import { consultants } from "@/lib/db/schema";
@@ -29,10 +29,14 @@ export default async function AdminConsultantDetailPage({
   await requireAdmin();
   const { id } = await params;
 
+  // The org-overview surfaces (StatCard, "Recently added") link here using
+  // the organization id, since that's what every other org-type detail page
+  // is keyed by; the roster list links using the consultant row's own id.
+  // Both need to resolve to the same row for a self-registered consultant.
   const [consultant] = await getDb()
     .select()
     .from(consultants)
-    .where(eq(consultants.id, id))
+    .where(or(eq(consultants.id, id), eq(consultants.organizationId, id)))
     .limit(1);
   if (!consultant) notFound();
 

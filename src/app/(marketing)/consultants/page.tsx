@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ConsultantCard } from "@/components/ConsultantCard";
 import { CtaSection } from "@/components/CtaSection";
 import { FaqVideoSection } from "@/components/FaqVideoSection";
@@ -99,7 +100,7 @@ export default async function ConsultantsPage() {
           <Reveal i={2}>
             <p className="mt-5 leading-relaxed text-[var(--muted)] text-pretty">
               We provide consultancy services directly to brands, franchisees
-              and landlords — whether or not you're already working with
+              and landlords — whether or not you&rsquo;re already working with
               Connectors on an expansion, a franchise or a property.
             </p>
           </Reveal>
@@ -135,7 +136,7 @@ export default async function ConsultantsPage() {
             <div className="rounded-2xl border border-dashed border-[var(--border)] px-8 py-16 text-center">
               <p className="font-display text-xl">The roster is being finalised.</p>
               <p className="mx-auto mt-3 max-w-md leading-relaxed text-[var(--muted)] text-pretty">
-                In the meantime, tell us what you need and we'll match you with
+                In the meantime, tell us what you need and we&rsquo;ll match you with
                 the right person directly.
               </p>
               <div className="mt-8 flex justify-center">
@@ -158,6 +159,18 @@ export default async function ConsultantsPage() {
             </div>
           )}
         </div>
+
+        <Reveal>
+          <p className="mt-10 text-center text-sm text-[var(--muted)]">
+            Are you a consultant?{" "}
+            <Link
+              href="/become-a-consultant"
+              className="text-violet-600 underline underline-offset-4"
+            >
+              Join the roster
+            </Link>
+          </p>
+        </Reveal>
       </Section>
 
       {/* Testimonials — see consultantTestimonials for the placeholder

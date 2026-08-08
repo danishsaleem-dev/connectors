@@ -1,7 +1,8 @@
 import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui";
 import { MediaPicker, type MediaValue } from "@/components/portal/MediaPicker";
+import { RepeatableEntries } from "@/components/portal/RepeatableEntries";
 import { INDUSTRIES, VENDOR_DISCIPLINE_LABEL } from "@/lib/portal/domain";
-import type { OrgType } from "@/lib/db/schema";
+import type { ConsultantEducation, ConsultantExperience, OrgType } from "@/lib/db/schema";
 
 /**
  * The qualifying questions for each participant type, in one place.
@@ -33,6 +34,8 @@ export function ProfileFields({
   profile,
   organizationId,
   logoPreview,
+  experienceFileUrls = [],
+  educationFileUrls = [],
 }: {
   type: OrgType;
   profile: ProfileRecord;
@@ -40,10 +43,16 @@ export function ProfileFields({
    * create page — no org exists yet, so the picker uses the current admin's
    * own holding area instead of scoping to one. */
   organizationId?: string | null;
-  /** The existing logo, pre-resolved to a signed URL by the caller (a Server
-   * Component, where resolveMediaUrl actually lives) — this file stays a
-   * plain sync component. */
+  /** The existing logo/photo, pre-resolved to a signed URL by the caller (a
+   * Server Component, where resolveMediaUrl actually lives) — this file
+   * stays a plain sync component. Doubles as the consultant branch's photo
+   * preview, same MediaValue shape either way. */
   logoPreview?: MediaValue | null;
+  /** Signed URLs for the consultant branch's Experience/Education file
+   * attachments, index-aligned with profile.experience/education — same
+   * convention as the admin consultant edit page. */
+  experienceFileUrls?: (string | null)[];
+  educationFileUrls?: (string | null)[];
 }) {
   if (type === "brand") {
     return (
@@ -301,34 +310,97 @@ export function ProfileFields({
     );
   }
 
+  if (type === "investor") {
+    return (
+      <>
+        <Field label="Ticket size from">
+          <Input name="ticketMin" type="number" defaultValue={text(profile, "ticketMin")} />
+        </Field>
+        <Field label="Ticket size to">
+          <Input name="ticketMax" type="number" defaultValue={text(profile, "ticketMax")} />
+        </Field>
+        <Field label="Sectors of interest" hint="Comma separated" className="sm:col-span-2">
+          <Input
+            name="sectors"
+            defaultValue={text(profile, "sectors")}
+            placeholder="Food & Beverage, Retail Chains"
+          />
+        </Field>
+        <Field label="Investment types" hint="Comma separated" className="sm:col-span-2">
+          <Input
+            name="investmentTypes"
+            defaultValue={text(profile, "investmentTypes")}
+            placeholder="Equity, Joint venture, Multi-unit franchise"
+          />
+        </Field>
+        <Field label="Horizon (months)">
+          <Input name="horizonMonths" type="number" defaultValue={text(profile, "horizonMonths")} />
+        </Field>
+        <Field label="Anything else" className="sm:col-span-2">
+          <Textarea name="notes" defaultValue={text(profile, "notes")} rows={3} />
+        </Field>
+      </>
+    );
+  }
+
+  // type === "consultant" — the roster profile itself. isPublished and the
+  // display name stay admin-only (see /portal/admin/consultants), so this
+  // is only what the consultant is trusted to keep current themselves.
   return (
     <>
-      <Field label="Ticket size from">
-        <Input name="ticketMin" type="number" defaultValue={text(profile, "ticketMin")} />
-      </Field>
-      <Field label="Ticket size to">
-        <Input name="ticketMax" type="number" defaultValue={text(profile, "ticketMax")} />
-      </Field>
-      <Field label="Sectors of interest" hint="Comma separated" className="sm:col-span-2">
-        <Input
-          name="sectors"
-          defaultValue={text(profile, "sectors")}
-          placeholder="Food & Beverage, Retail Chains"
+      <Field label="Photo" className="sm:col-span-2">
+        <MediaPicker
+          name="photo"
+          organizationId={organizationId ?? null}
+          initial={logoPreview ? [logoPreview] : []}
         />
       </Field>
-      <Field label="Investment types" hint="Comma separated" className="sm:col-span-2">
+      <Field label="Areas of expertise" hint="Comma separated" className="sm:col-span-2">
         <Input
-          name="investmentTypes"
-          defaultValue={text(profile, "investmentTypes")}
-          placeholder="Equity, Joint venture, Multi-unit franchise"
+          name="expertise"
+          defaultValue={text(profile, "expertise")}
+          placeholder="Site selection, Franchise structuring"
         />
       </Field>
-      <Field label="Horizon (months)">
-        <Input name="horizonMonths" type="number" defaultValue={text(profile, "horizonMonths")} />
+      <Field label="Years of experience">
+        <Input name="yearsExperience" type="number" defaultValue={text(profile, "yearsExperience")} />
       </Field>
-      <Field label="Anything else" className="sm:col-span-2">
-        <Textarea name="notes" defaultValue={text(profile, "notes")} rows={3} />
+      <Field label="Bio" className="sm:col-span-2">
+        <Textarea name="bio" defaultValue={text(profile, "bio")} rows={5} />
       </Field>
+
+      <div className="sm:col-span-2">
+        <span className="mb-2 block text-[13px] font-medium">Experience</span>
+        <RepeatableEntries
+          name="experience"
+          addLabel="Add experience"
+          fields={[
+            { key: "title", label: "Title", placeholder: "e.g. Franchise Director" },
+            { key: "yearFrom", label: "From", placeholder: "2019" },
+            { key: "yearTo", label: "To", placeholder: "2022 or Present" },
+            { key: "description", label: "Description", type: "textarea", span: 2 },
+            { key: "attachment", label: "Supporting document", type: "file", span: 2 },
+          ]}
+          initial={(profile?.experience as ConsultantExperience[] | undefined) ?? []}
+          existingFileUrls={experienceFileUrls}
+        />
+      </div>
+
+      <div className="sm:col-span-2">
+        <span className="mb-2 block text-[13px] font-medium">Degrees / certificates</span>
+        <RepeatableEntries
+          name="education"
+          addLabel="Add degree / certificate"
+          fields={[
+            { key: "title", label: "Title", placeholder: "e.g. MBA, Franchise Management" },
+            { key: "year", label: "Year", placeholder: "2018" },
+            { key: "description", label: "Description", type: "textarea", span: 2 },
+            { key: "attachment", label: "Supporting document", type: "file", span: 2 },
+          ]}
+          initial={(profile?.education as ConsultantEducation[] | undefined) ?? []}
+          existingFileUrls={educationFileUrls}
+        />
+      </div>
     </>
   );
 }
