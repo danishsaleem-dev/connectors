@@ -2,90 +2,16 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
-import { getDb } from "@/lib/db/client";
-import {
-  brandProfiles,
-  developerProfiles,
-  franchiseeProfiles,
-  investorProfiles,
-  landlordProfiles,
-  organizations,
-  users,
-  vendorProfiles,
-  type OrgType,
-} from "@/lib/db/schema";
-import { SELF_SERVICE_TYPES, VENDOR_DISCIPLINE_LABEL, slugify } from "@/lib/portal/domain";
-import { hashPassword, verifyPassword } from "./password";
-import { COOKIE_NAME, SESSION_TTL_SECONDS, createSessionToken } from "./session";
+import type { OrgType } from "@/lib/db/schema";
+import { createAccount } from "./create-account";
+import { verifyCredentials } from "./credentials";
+import { COOKIE_NAME, setSessionCookie } from "./session";
 
 export type LoginState = { error?: string };
 export type RegisterState = { error?: string };
 
-function isValidEmail(value: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
-
-async function setSessionCookie(payload: {
-  userId: string;
-  isAdmin: boolean;
-  organizationId: string | null;
-}) {
-  const token = await createSessionToken(payload);
-  const store = await cookies();
-  store.set(COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: SESSION_TTL_SECONDS,
-    path: "/",
-  });
-}
-
-/** Creates the empty profile row matching the organization's type, so the
- * onboarding wizard always has a record to update rather than having to
- * branch on insert-vs-update. */
-async function createProfileFor(
-  type: OrgType,
-  organizationId: string,
-  orgName: string,
-  discipline?: string | null,
-) {
-  const db = getDb();
-  switch (type) {
-    case "brand":
-      await db.insert(brandProfiles).values({ organizationId });
-      break;
-    case "franchisee":
-      await db.insert(franchiseeProfiles).values({ organizationId });
-      break;
-    case "landlord":
-      await db.insert(landlordProfiles).values({ organizationId });
-      break;
-    case "developer":
-      await db.insert(developerProfiles).values({ organizationId });
-      break;
-    case "investor":
-      await db.insert(investorProfiles).values({ organizationId });
-      break;
-    case "vendor":
-      // Discipline is captured at signup rather than left to onboarding —
-      // it's the one field that makes a new partner immediately placeable,
-      // which is the whole promise of the programme. Slug is seeded from
-      // the org name, matching the admin-created path in portal/actions.ts.
-      await db.insert(vendorProfiles).values({
-        organizationId,
-        slug: `${slugify(orgName)}-${organizationId.slice(0, 6)}`,
-        ...(discipline
-          ? { discipline: discipline as (typeof vendorProfiles.$inferInsert)["discipline"] }
-          : {}),
-      });
-      break;
-  }
-}
-
 export async function login(_prevState: LoginState, formData: FormData): Promise<LoginState> {
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
 
   if (!email || !password) {
@@ -94,17 +20,12 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
 
   let user;
   try {
-    const db = getDb();
-    [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    user = await verifyCredentials(email, password);
   } catch (err) {
     console.error("[portal] login lookup failed", err);
     return { error: "The portal isn't available right now. Please try again shortly." };
   }
-
-  // Same generic message either way — never confirm whether an email exists.
-  if (!user || !(await verifyPassword(password, user.passwordHash))) {
-    return { error: "Incorrect email or password." };
-  }
+  if (!user) return { error: "Incorrect email or password." };
 
   await setSessionCookie({
     userId: user.id,
@@ -119,55 +40,20 @@ export async function register(
   _prevState: RegisterState,
   formData: FormData,
 ): Promise<RegisterState> {
-  const type = String(formData.get("type") ?? "") as OrgType;
-  const orgName = String(formData.get("organizationName") ?? "").trim();
-  const name = String(formData.get("name") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const password = String(formData.get("password") ?? "");
-  const rawDiscipline = String(formData.get("discipline") ?? "").trim();
-  // Validated against the label map rather than trusted from the form — the
-  // column is an enum, so an unrecognised value would fail the insert.
-  const discipline =
-    type === "vendor" && VENDOR_DISCIPLINE_LABEL[rawDiscipline] ? rawDiscipline : null;
-
-  if (!SELF_SERVICE_TYPES.includes(type)) {
-    return { error: "Choose an account type." };
-  }
-  if (orgName.length < 2) return { error: "Enter your company or organization name." };
-  if (name.length < 2) return { error: "Enter your name." };
-  if (!isValidEmail(email)) return { error: "Enter a valid email address." };
-  if (password.length < 8) return { error: "Use a password of at least 8 characters." };
-  if (type === "vendor" && !discipline) return { error: "Choose what you do." };
-
-  let created;
-  try {
-    const db = getDb();
-    const [existing] = await db.select().from(users).where(eq(users.email, email)).limit(1);
-    if (existing) return { error: "An account with that email already exists." };
-
-    const [org] = await db
-      .insert(organizations)
-      .values({ name: orgName, type })
-      .returning();
-
-    await createProfileFor(type, org.id, orgName, discipline);
-
-    const passwordHash = await hashPassword(password);
-    const [user] = await db
-      .insert(users)
-      .values({ email, name, organizationId: org.id, passwordHash })
-      .returning();
-
-    created = user;
-  } catch (err) {
-    console.error("[portal] registration failed", err);
-    return { error: "Something went wrong creating your account. Please try again." };
-  }
+  const result = await createAccount({
+    type: String(formData.get("type") ?? "") as OrgType,
+    organizationName: String(formData.get("organizationName") ?? ""),
+    name: String(formData.get("name") ?? ""),
+    email: String(formData.get("email") ?? ""),
+    password: String(formData.get("password") ?? ""),
+    discipline: String(formData.get("discipline") ?? ""),
+  });
+  if (!result.ok) return { error: result.error };
 
   await setSessionCookie({
-    userId: created.id,
+    userId: result.user.id,
     isAdmin: false,
-    organizationId: created.organizationId,
+    organizationId: result.user.organizationId,
   });
 
   redirect("/portal/onboarding");

@@ -8,6 +8,8 @@
  * without pinning a runtime anywhere.
  */
 
+import { cookies } from "next/headers";
+
 export const COOKIE_NAME = "connectors_session";
 export const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
@@ -93,4 +95,82 @@ export async function verifySessionToken(
   } catch {
     return null;
   }
+}
+
+/**
+ * App-to-browser sign-in handoff (see /portal/handoff): the mobile app
+ * authenticates over the JSON API, then has to get the user into a real
+ * browser session without asking them to type their password twice. Rather
+ * than putting the 7-day session token itself in a URL — it'd sit in
+ * browser history and server logs for a week if it leaked — this mints a
+ * separate token good for 2 minutes and tagged `purpose: "handoff"` so it
+ * can never be replayed as a long-lived session even if someone fed it to
+ * verifySessionToken directly.
+ */
+export type HandoffPayload = {
+  purpose: "handoff";
+  userId: string;
+  isAdmin: boolean;
+  organizationId: string | null;
+  exp: number;
+};
+
+const HANDOFF_TTL_SECONDS = 120;
+
+export async function createHandoffToken(
+  payload: Omit<HandoffPayload, "exp" | "purpose">,
+) {
+  const body: HandoffPayload = {
+    purpose: "handoff",
+    ...payload,
+    exp: Date.now() + HANDOFF_TTL_SECONDS * 1000,
+  };
+  const encoded = toBase64Url(new TextEncoder().encode(JSON.stringify(body)).buffer as ArrayBuffer);
+  const key = await getKey();
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(encoded));
+  return `${encoded}.${toBase64Url(signature)}`;
+}
+
+export async function verifyHandoffToken(
+  token: string | undefined | null,
+): Promise<HandoffPayload | null> {
+  if (!token) return null;
+  const [encoded, signature] = token.split(".");
+  if (!encoded || !signature) return null;
+
+  try {
+    const key = await getKey();
+    const valid = await crypto.subtle.verify(
+      "HMAC",
+      key,
+      fromBase64Url(signature),
+      new TextEncoder().encode(encoded),
+    );
+    if (!valid) return null;
+
+    const payload = JSON.parse(new TextDecoder().decode(fromBase64Url(encoded))) as HandoffPayload;
+    if (payload.purpose !== "handoff") return null;
+    if (payload.exp < Date.now()) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+/** Shared by the web login/register Server Actions and anything else that
+ * needs to sign someone in on this request. */
+export async function setSessionCookie(payload: {
+  userId: string;
+  isAdmin: boolean;
+  organizationId: string | null;
+}) {
+  const token = await createSessionToken(payload);
+  const store = await cookies();
+  store.set(COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: SESSION_TTL_SECONDS,
+    path: "/",
+  });
 }
