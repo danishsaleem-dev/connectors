@@ -552,6 +552,94 @@ export async function saveConsultant(
   }
 }
 
+/**
+ * Gives an admin-created consultant a portal login.
+ *
+ * A consultant added from the admin form has no organization and no user —
+ * only a `consultants` row — so there is nothing to sign in with until this
+ * runs. Self-service signup builds all three at once (see createAccount);
+ * this is the same shape assembled in the other order, for someone whose
+ * profile existed first.
+ *
+ * Deliberately *links* the existing consultant row to the new organization
+ * rather than calling createProfileFor, which would insert a second
+ * consultant row and orphan the one the admin just filled in.
+ *
+ * The temp password is returned for the admin to pass on, or emailed when
+ * RESEND_API_KEY is set — same handling as resetUserPassword, which is also
+ * where you go to issue a new one later.
+ */
+export async function createConsultantLogin(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdminUser();
+    const id = str(formData, "id");
+    const email = (str(formData, "email") ?? "").toLowerCase();
+    if (!id) return { ok: false, error: "Missing consultant." };
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return { ok: false, error: "Enter a valid email address." };
+    }
+
+    const db = getDb();
+    const [consultant] = await db
+      .select()
+      .from(consultants)
+      .where(eq(consultants.id, id))
+      .limit(1);
+    if (!consultant) return { ok: false, error: "Consultant not found." };
+    if (consultant.organizationId) {
+      return { ok: false, error: "This consultant already has a login." };
+    }
+
+    const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    if (existingUser) return { ok: false, error: "An account with that email already exists." };
+
+    const [org] = await db
+      .insert(organizations)
+      .values({ name: consultant.name, type: "consultant" })
+      .returning();
+
+    await db
+      .update(consultants)
+      .set({ organizationId: org.id })
+      .where(eq(consultants.id, id));
+
+    const tempPassword = generateTempPassword();
+    await db.insert(users).values({
+      email,
+      name: consultant.name,
+      organizationId: org.id,
+      passwordHash: await hashPassword(tempPassword),
+    });
+
+    if (process.env.RESEND_API_KEY) {
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      await resend.emails.send({
+        from: process.env.CONTACT_FROM_EMAIL ?? "Connectors Portal <onboarding@resend.dev>",
+        to: email,
+        subject: "Your Connectors consultant login",
+        text: `Hi ${consultant.name},
+
+Your Connectors consultant profile is ready and you can now sign in to keep it up to date.
+
+Email: ${email}
+Temporary password: ${tempPassword}
+
+Sign in at ${site.name} / Portal and change your password once you're in.`,
+      });
+      revalidatePortal();
+      return { ok: true };
+    }
+
+    revalidatePortal();
+    return { ok: true, tempPassword };
+  } catch (err) {
+    return fail("createConsultantLogin", err, "Couldn't create that login.");
+  }
+}
+
 export async function deleteConsultant(
   _prevState: ActionState,
   formData: FormData,

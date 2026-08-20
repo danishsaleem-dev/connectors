@@ -4,9 +4,10 @@ import { notFound } from "next/navigation";
 import { eq, or } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth/current-user";
 import { getDb } from "@/lib/db/client";
-import { consultants } from "@/lib/db/schema";
+import { consultants, users } from "@/lib/db/schema";
 import { listExpertiseSuggestions } from "@/lib/db/queries";
 import { ActionForm } from "@/components/portal/ActionForm";
+import { ConsultantLogin } from "@/components/portal/ConsultantLogin";
 import { MediaPicker } from "@/components/portal/MediaPicker";
 import { PortalHeader } from "@/components/portal/PortalHeader";
 import { RepeatableEntries } from "@/components/portal/RepeatableEntries";
@@ -44,6 +45,15 @@ export default async function AdminConsultantDetailPage({
     resolveMediaUrl(consultant.photoUrl),
     listExpertiseSuggestions(),
   ]);
+  // Null for a consultant the admin typed in by hand — they have no
+  // organization and so no account until one is issued below.
+  const [account] = consultant.organizationId
+    ? await getDb()
+        .select({ id: users.id, email: users.email })
+        .from(users)
+        .where(eq(users.organizationId, consultant.organizationId))
+        .limit(1)
+    : [];
   const [experienceFileUrls, educationFileUrls] = await Promise.all([
     Promise.all((consultant.experience ?? []).map((e) => resolveMediaUrl(e.attachment))),
     Promise.all((consultant.education ?? []).map((e) => resolveMediaUrl(e.attachment))),
@@ -166,6 +176,17 @@ export default async function AdminConsultantDetailPage({
             />
           </div>
         </ActionForm>
+
+        <div className="mt-6 border-t border-[var(--border)] pt-6">
+          <h2 className="text-sm font-medium">Portal login</h2>
+          <p className="mb-3 mt-0.5 text-xs text-[var(--muted)]">
+            Lets this consultant sign in and maintain their own profile.
+          </p>
+          <ConsultantLogin
+            consultantId={consultant.id}
+            account={account ? { id: account.id, email: account.email } : null}
+          />
+        </div>
 
         <div className="mt-6 border-t border-[var(--border)] pt-6">
           <ActionForm
