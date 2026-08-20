@@ -31,7 +31,7 @@ import {
   type OrgType,
 } from "@/lib/db/schema";
 import { site } from "@/lib/site";
-import { uniqueConsultantSlug } from "./consultant-slug";
+import { slugTakenByOther, uniqueConsultantSlug } from "./consultant-slug";
 import { sanitizeRichText } from "./rich-text";
 import { slugify } from "./domain";
 import { requireAdminUser, requireOrgUser } from "./guards";
@@ -529,9 +529,17 @@ export async function saveConsultant(
 
     const db = getDb();
     if (id) {
-      // `slug` is deliberately not in `values` — it's set once on create and
-      // never rewritten, so an edit can't break existing profile links.
-      await db.update(consultants).set(values).where(eq(consultants.id, id));
+      // The slug is editable, but only on purpose: changing it breaks every
+      // link already pointing at the old URL, so an empty field keeps the
+      // current handle rather than silently regenerating it from the name.
+      const desiredSlug = slugify(str(formData, "slug") ?? "");
+      if (desiredSlug && (await slugTakenByOther(desiredSlug, id))) {
+        return { ok: false, error: "That profile URL is already used by another consultant." };
+      }
+      await db
+        .update(consultants)
+        .set(desiredSlug ? { ...values, slug: desiredSlug } : values)
+        .where(eq(consultants.id, id));
     } else {
       await db.insert(consultants).values({ ...values, slug: await uniqueConsultantSlug(name) });
     }

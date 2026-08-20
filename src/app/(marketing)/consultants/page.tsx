@@ -151,8 +151,6 @@ export default async function ConsultantsPage() {
                     slug={c.slug ?? c.id}
                     name={c.name}
                     photoUrl={c.photoUrl}
-                    expertise={(c.expertise ?? []).map((e) => e.name)}
-                    yearsExperience={c.yearsExperience}
                   />
                 </Reveal>
               ))}

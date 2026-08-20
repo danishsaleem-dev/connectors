@@ -1,4 +1,5 @@
 import "server-only";
+import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
 import { consultants } from "@/lib/db/schema";
 import { slugify } from "./domain";
@@ -16,4 +17,16 @@ export async function uniqueConsultantSlug(name: string) {
     if (!taken.has(`${base}-${i}`)) return `${base}-${i}`;
   }
   return `${base}-${Date.now().toString(36)}`;
+}
+
+/** Whether some *other* consultant already holds this slug — the column is
+ * unique, so an admin renaming a profile onto a taken handle would otherwise
+ * hit a raw constraint error instead of a readable message. */
+export async function slugTakenByOther(slug: string, id: string) {
+  const rows = await getDb()
+    .select({ id: consultants.id })
+    .from(consultants)
+    .where(eq(consultants.slug, slug))
+    .limit(1);
+  return rows.length > 0 && rows[0].id !== id;
 }

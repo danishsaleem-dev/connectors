@@ -8,7 +8,7 @@ import { PortalHeader } from "@/components/portal/PortalHeader";
 import { RepeatableEntries } from "@/components/portal/RepeatableEntries";
 import { RichText } from "@/components/portal/RichText";
 import { Panel } from "@/components/portal/ui";
-import { Checkbox, Field, Input, Textarea } from "@/components/ui";
+import { Checkbox, Field, Input } from "@/components/ui";
 import { saveConsultant } from "@/lib/portal/actions";
 
 export const metadata: Metadata = {

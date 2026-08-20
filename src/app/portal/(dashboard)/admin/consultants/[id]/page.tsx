@@ -12,7 +12,7 @@ import { PortalHeader } from "@/components/portal/PortalHeader";
 import { RepeatableEntries } from "@/components/portal/RepeatableEntries";
 import { RichText } from "@/components/portal/RichText";
 import { Panel } from "@/components/portal/ui";
-import { Checkbox, Field, Input, Textarea } from "@/components/ui";
+import { Checkbox, Field, Input } from "@/components/ui";
 import { resolveMediaUrl } from "@/lib/storage/media";
 import { deleteConsultant, saveConsultant } from "@/lib/portal/actions";
 
@@ -94,6 +94,20 @@ export default async function AdminConsultantDetailPage({
               initial={consultant.expertise ?? []}
             />
           </div>
+          <Field
+            label="Profile URL"
+            hint="Changing this breaks existing links"
+            className="sm:col-span-2"
+          >
+            <Input
+              name="slug"
+              defaultValue={consultant.slug ?? ""}
+              placeholder="firstname-lastname"
+            />
+            <span className="mt-1 block text-xs text-[var(--muted)]">
+              /consultants/{consultant.slug ?? ""}
+            </span>
+          </Field>
           <Field label="Years of experience">
             <Input name="yearsExperience" type="number" min={0} defaultValue={consultant.yearsExperience ?? ""} />
           </Field>

@@ -2,48 +2,46 @@ import Link from "next/link";
 
 /** Links through to the consultant's own page rather than opening a modal —
  * a full profile (bio, experience, education, the enquiry form) needs more
- * room than a modal gives it, and deserves its own shareable URL. */
+ * room than a modal gives it, and deserves its own shareable URL.
+ *
+ * The portrait is the whole card, with the name over a scrim at the bottom.
+ * The earlier version stacked every expertise tag under the name, which on a
+ * consultant carrying twenty of them buried the photo under a wall of violet
+ * text and made each card a different height. The tags still exist — they're
+ * on the profile page, which has room to set them properly. */
 export function ConsultantCard({
   slug,
   name,
   photoUrl,
-  expertise,
-  yearsExperience,
 }: {
   slug: string;
   name: string;
   photoUrl: string | null;
-  expertise: string[];
-  yearsExperience: number | null;
 }) {
   return (
     <Link
       href={`/consultants/${slug}`}
-      className="flex h-full flex-col overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] transition-all hover:border-violet-400 hover:shadow-[0_28px_56px_-32px_rgba(20,20,26,0.35)]"
+      className="group relative block aspect-[3/4] overflow-hidden rounded-2xl bg-[var(--surface-sunken)] transition-all hover:shadow-[0_28px_56px_-32px_rgba(20,20,26,0.45)]"
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-[var(--surface-sunken)]">
-        {photoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- private signed Storage URL
-          <img src={photoUrl} alt={name} className="h-full w-full object-cover" />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <span className="font-display text-3xl text-[var(--muted)]/40">
-              {name.charAt(0)}
-            </span>
-          </div>
-        )}
-      </div>
+      {photoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element -- private signed Storage URL
+        <img
+          src={photoUrl}
+          alt={name}
+          className="h-full w-full object-cover transition-transform duration-700 ease-[var(--ease-out-expo)] group-hover:scale-[1.04]"
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center">
+          <span className="font-display text-5xl text-[var(--muted)]/40">
+            {name.charAt(0)}
+          </span>
+        </div>
+      )}
 
-      <div className="flex flex-1 flex-col p-5">
-        <h3 className="font-display text-lg">{name}</h3>
-        {expertise.length > 0 && (
-          <p className="mt-1 text-sm text-violet-600">{expertise.join(" · ")}</p>
-        )}
-        {yearsExperience != null && (
-          <p className="mt-1 text-xs text-[var(--muted)]">
-            {yearsExperience} years of experience
-          </p>
-        )}
+      {/* Scrim rather than a solid bar — the name stays legible over a light
+          or dark portrait without cropping the image behind it. */}
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent px-5 pb-5 pt-14">
+        <h3 className="font-display text-lg text-white drop-shadow-sm">{name}</h3>
       </div>
     </Link>
   );
