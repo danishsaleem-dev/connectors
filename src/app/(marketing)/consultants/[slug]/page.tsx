@@ -85,11 +85,11 @@ export default async function ConsultantProfilePage({
 
             {expertise.length > 0 && (
               <Reveal i={2}>
-                <div className="mt-6 flex flex-wrap gap-2">
+                <div className="mt-6 flex flex-wrap gap-1.5">
                   {expertise.map((s) => (
                     <span
                       key={s.name}
-                      className="rounded-full border border-violet-600/25 bg-violet-50 px-3.5 py-1.5 text-sm text-violet-600"
+                      className="rounded-full border border-violet-600/25 bg-violet-50 px-2.5 py-0.5 text-[12.5px] leading-5 text-violet-600"
                     >
                       {s.name}
                     </span>
