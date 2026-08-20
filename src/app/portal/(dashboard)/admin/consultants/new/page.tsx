@@ -6,7 +6,7 @@ import { ActionForm } from "@/components/portal/ActionForm";
 import { MediaPicker } from "@/components/portal/MediaPicker";
 import { PortalHeader } from "@/components/portal/PortalHeader";
 import { RepeatableEntries } from "@/components/portal/RepeatableEntries";
-import { TagInput } from "@/components/portal/TagInput";
+import { RichText } from "@/components/portal/RichText";
 import { Panel } from "@/components/portal/ui";
 import { Checkbox, Field, Input, Textarea } from "@/components/ui";
 import { saveConsultant } from "@/lib/portal/actions";
@@ -44,18 +44,29 @@ export default async function AdminConsultantNewPage() {
           <Field label="Last name">
             <Input name="lastName" placeholder="e.g. Anand" />
           </Field>
-          <Field
-            label="Areas of expertise"
-            hint="Press Enter to add one, or paste a comma-separated list"
-            className="sm:col-span-2"
-          >
-            <TagInput name="expertise" suggestions={expertiseSuggestions} placeholder="Site Selection, Franchise Structuring…" />
-          </Field>
+          <div className="sm:col-span-2">
+            <span className="mb-2 block text-[13px] font-medium">Areas of expertise</span>
+            <RepeatableEntries
+              name="expertise"
+              addLabel="Add area of expertise"
+              fields={[
+                { key: "name", label: "Area", placeholder: "e.g. Site Selection", suggestions: expertiseSuggestions },
+                {
+                  key: "description",
+                  label: "Description",
+                  hint: "Optional",
+                  type: "textarea",
+                  span: 2,
+                  placeholder: "Optional — what this covers, in a line or two.",
+                },
+              ]}
+            />
+          </div>
           <Field label="Years of experience">
             <Input name="yearsExperience" type="number" min={0} />
           </Field>
           <Field label="Bio" className="sm:col-span-2">
-            <Textarea name="bio" rows={4} />
+            <RichText name="bio" placeholder="A few paragraphs about their background." />
           </Field>
 
           <div className="sm:col-span-2">

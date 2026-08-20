@@ -267,3 +267,69 @@ html.lenis body {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* ---------------------------------------------------------------------
+   Rich text — the consultant bio, authored in the portal's RichText
+   editor and rendered on the public profile. One rule set drives both:
+   `.rich-text` on the published page, `.prose-editor` inside the editor,
+   so what an admin types looks like what a visitor gets.
+   --------------------------------------------------------------------- */
+.rich-text > * + *,
+.prose-editor > * + * {
+  margin-top: 1em;
+}
+.rich-text h2,
+.prose-editor h2 {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-size: 1.5rem;
+  line-height: 1.25;
+  color: var(--foreground);
+}
+.rich-text h3,
+.prose-editor h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+.rich-text ul,
+.prose-editor ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+.rich-text ol,
+.prose-editor ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+.rich-text li + li,
+.prose-editor li + li {
+  margin-top: 0.25rem;
+}
+.rich-text blockquote,
+.prose-editor blockquote {
+  border-left: 2px solid var(--border);
+  padding-left: 1rem;
+  font-style: italic;
+}
+.rich-text a,
+.prose-editor a {
+  color: var(--color-violet-600, #4b2e83);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.rich-text strong,
+.prose-editor strong {
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+/* Placeholder for the empty editor — ProseMirror leaves a single empty
+   paragraph behind, which otherwise reads as a blank box with no prompt. */
+.prose-editor.ProseMirror p.is-editor-empty:first-child::before,
+.prose-editor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
+  pointer-events: none;
+  float: left;
+  height: 0;
+}

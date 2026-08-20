@@ -10,7 +10,7 @@ import { ActionForm } from "@/components/portal/ActionForm";
 import { MediaPicker } from "@/components/portal/MediaPicker";
 import { PortalHeader } from "@/components/portal/PortalHeader";
 import { RepeatableEntries } from "@/components/portal/RepeatableEntries";
-import { TagInput } from "@/components/portal/TagInput";
+import { RichText } from "@/components/portal/RichText";
 import { Panel } from "@/components/portal/ui";
 import { Checkbox, Field, Input, Textarea } from "@/components/ui";
 import { resolveMediaUrl } from "@/lib/storage/media";
@@ -75,17 +75,25 @@ export default async function AdminConsultantDetailPage({
               defaultValue={consultant.lastName ?? consultant.name.split(" ").slice(1).join(" ")}
             />
           </Field>
-          <Field
-            label="Areas of expertise"
-            hint="Press Enter to add one, or paste a comma-separated list"
-            className="sm:col-span-2"
-          >
-            <TagInput
+          <div className="sm:col-span-2">
+            <span className="mb-2 block text-[13px] font-medium">Areas of expertise</span>
+            <RepeatableEntries
               name="expertise"
+              addLabel="Add area of expertise"
+              fields={[
+                { key: "name", label: "Area", placeholder: "e.g. Site Selection", suggestions: expertiseSuggestions },
+                {
+                  key: "description",
+                  label: "Description",
+                  hint: "Optional",
+                  type: "textarea",
+                  span: 2,
+                  placeholder: "Optional — what this covers, in a line or two.",
+                },
+              ]}
               initial={consultant.expertise ?? []}
-              suggestions={expertiseSuggestions}
             />
-          </Field>
+          </div>
           <Field label="Years of experience">
             <Input name="yearsExperience" type="number" min={0} defaultValue={consultant.yearsExperience ?? ""} />
           </Field>
@@ -93,7 +101,7 @@ export default async function AdminConsultantDetailPage({
             <Input name="sortOrder" type="number" defaultValue={consultant.sortOrder} />
           </Field>
           <Field label="Bio" className="sm:col-span-2">
-            <Textarea name="bio" rows={4} defaultValue={consultant.bio ?? ""} />
+            <RichText name="bio" initialHtml={consultant.bio ?? ""} />
           </Field>
 
           <div className="sm:col-span-2">

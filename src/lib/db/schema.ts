@@ -420,6 +420,15 @@ export type ConsultantEducation = {
   attachment?: string;
 };
 
+/** One area of expertise. `description` is optional — a bare name is a
+ * valid entry and most are, so nothing forces a blurb per tag. Stored as
+ * jsonb rather than the old text[] so the name can carry that description
+ * without a parallel column the two could drift between. */
+export type ConsultantExpertise = {
+  name: string;
+  description?: string;
+};
+
 export const consultants = pgTable("consultants", {
   id: uuid("id").defaultRandom().primaryKey(),
   /** Null for admin-authored rows. Set once at signup for a self-registered
@@ -440,7 +449,7 @@ export const consultants = pgTable("consultants", {
    * break every link already pointing at their profile. */
   slug: text("slug").unique(),
   photoUrl: text("photo_url"),
-  expertise: text("expertise").array(),
+  expertise: jsonb("expertise").$type<ConsultantExpertise[]>(),
   yearsExperience: integer("years_experience"),
   bio: text("bio"),
   /** Repeatable admin-entered groups, stored as JSON rather than child

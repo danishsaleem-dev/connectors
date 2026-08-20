@@ -27,10 +27,12 @@ import {
   vendorProfiles,
   type ConsultantEducation,
   type ConsultantExperience,
+  type ConsultantExpertise,
   type OrgType,
 } from "@/lib/db/schema";
 import { site } from "@/lib/site";
 import { uniqueConsultantSlug } from "./consultant-slug";
+import { sanitizeRichText } from "./rich-text";
 import { slugify } from "./domain";
 import { requireAdminUser, requireOrgUser } from "./guards";
 
@@ -248,9 +250,9 @@ async function writeProfile(type: OrgType, organizationId: string, formData: For
       await db
         .update(consultants)
         .set({
-          expertise: list(formData, "expertise"),
+          expertise: jsonEntries<ConsultantExpertise>(formData, "expertise"),
           yearsExperience: num(formData, "yearsExperience"),
-          bio: str(formData, "bio"),
+          bio: sanitizeRichText(str(formData, "bio")),
           experience: jsonEntries<ConsultantExperience>(formData, "experience"),
           education: jsonEntries<ConsultantEducation>(formData, "education"),
           ...(photoPath ? { photoUrl: photoPath } : {}),
@@ -516,9 +518,9 @@ export async function saveConsultant(
       lastName,
       name,
       photoUrl: str(formData, "photoUrl"),
-      expertise: list(formData, "expertise"),
+      expertise: jsonEntries<ConsultantExpertise>(formData, "expertise"),
       yearsExperience: num(formData, "yearsExperience"),
-      bio: str(formData, "bio"),
+      bio: sanitizeRichText(str(formData, "bio")),
       experience: jsonEntries<ConsultantExperience>(formData, "experience"),
       education: jsonEntries<ConsultantEducation>(formData, "education"),
       isPublished: bool(formData, "isPublished"),

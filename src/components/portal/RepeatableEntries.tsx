@@ -9,9 +9,14 @@ import { UPLOAD_ENABLED, uploadToStorage } from "@/lib/storage/upload-client";
 type EntryField = {
   key: string;
   label: string;
+  hint?: string;
   type?: "text" | "textarea" | "file";
   placeholder?: string;
   span?: 1 | 2;
+  /** Autocomplete values for a text field, offered via a native datalist —
+   * keeps expertise names converging on one spelling instead of forking
+   * into "Site Selection" / "site selection" across the roster. */
+  suggestions?: string[];
 };
 
 /**
@@ -139,6 +144,7 @@ export function RepeatableEntries({
                       <Field
                         key={f.key}
                         label={f.label}
+                        hint={f.hint}
                         className={clsx(f.span === 2 && "sm:col-span-2")}
                       >
                         {f.type === "textarea" ? (
@@ -149,11 +155,21 @@ export function RepeatableEntries({
                             onChange={(e) => update(i, f.key, e.target.value)}
                           />
                         ) : (
-                          <Input
-                            value={entry[f.key] ?? ""}
-                            placeholder={f.placeholder}
-                            onChange={(e) => update(i, f.key, e.target.value)}
-                          />
+                          <>
+                            <Input
+                              value={entry[f.key] ?? ""}
+                              placeholder={f.placeholder}
+                              list={f.suggestions?.length ? `${name}-${f.key}-options` : undefined}
+                              onChange={(e) => update(i, f.key, e.target.value)}
+                            />
+                            {f.suggestions?.length ? (
+                              <datalist id={`${name}-${f.key}-options`}>
+                                {f.suggestions.map((s) => (
+                                  <option key={s} value={s} />
+                                ))}
+                              </datalist>
+                            ) : null}
+                          </>
                         )}
                       </Field>
                     );

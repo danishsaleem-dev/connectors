@@ -205,7 +205,7 @@ export async function listExpertiseSuggestions() {
   const rows = await getDb().select({ expertise: consultants.expertise }).from(consultants);
   const set = new Set<string>();
   for (const row of rows) {
-    for (const tag of row.expertise ?? []) set.add(tag);
+    for (const tag of row.expertise ?? []) if (tag?.name) set.add(tag.name);
   }
   return [...set].sort((a, b) => a.localeCompare(b));
 }

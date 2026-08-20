@@ -1,8 +1,14 @@
 import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui";
 import { MediaPicker, type MediaValue } from "@/components/portal/MediaPicker";
 import { RepeatableEntries } from "@/components/portal/RepeatableEntries";
+import { RichText } from "@/components/portal/RichText";
 import { INDUSTRIES, VENDOR_DISCIPLINE_LABEL } from "@/lib/portal/domain";
-import type { ConsultantEducation, ConsultantExperience, OrgType } from "@/lib/db/schema";
+import type {
+  ConsultantEducation,
+  ConsultantExperience,
+  ConsultantExpertise,
+  OrgType,
+} from "@/lib/db/schema";
 
 /**
  * The qualifying questions for each participant type, in one place.
@@ -355,18 +361,30 @@ export function ProfileFields({
           initial={logoPreview ? [logoPreview] : []}
         />
       </Field>
-      <Field label="Areas of expertise" hint="Comma separated" className="sm:col-span-2">
-        <Input
+      <div className="sm:col-span-2">
+        <span className="mb-2 block text-[13px] font-medium">Areas of expertise</span>
+        <RepeatableEntries
           name="expertise"
-          defaultValue={text(profile, "expertise")}
-          placeholder="Site selection, Franchise structuring"
+          addLabel="Add area of expertise"
+          fields={[
+            { key: "name", label: "Area", placeholder: "e.g. Site Selection" },
+            {
+              key: "description",
+              label: "Description",
+              hint: "Optional",
+              type: "textarea",
+              span: 2,
+              placeholder: "Optional — what this covers, in a line or two.",
+            },
+          ]}
+          initial={(profile?.expertise as ConsultantExpertise[] | undefined) ?? []}
         />
-      </Field>
+      </div>
       <Field label="Years of experience">
         <Input name="yearsExperience" type="number" defaultValue={text(profile, "yearsExperience")} />
       </Field>
       <Field label="Bio" className="sm:col-span-2">
-        <Textarea name="bio" defaultValue={text(profile, "bio")} rows={5} />
+        <RichText name="bio" initialHtml={text(profile, "bio")} />
       </Field>
 
       <div className="sm:col-span-2">

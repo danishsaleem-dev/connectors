@@ -30,7 +30,7 @@ export default async function AdminConsultantsPage({
   const allRows = await listAllConsultants();
   const rows = allRows.filter(
     (c) =>
-      matchesQuery(q, c.name, ...(c.expertise ?? [])) &&
+      matchesQuery(q, c.name, ...(c.expertise ?? []).map((e) => e.name)) &&
       (!status || String(c.isPublished) === status),
   );
 
@@ -70,7 +70,9 @@ export default async function AdminConsultantsPage({
               }
               meta={
                 [
-                  c.expertise && c.expertise.length > 0 ? c.expertise.join(" · ") : null,
+                  c.expertise && c.expertise.length > 0
+                    ? c.expertise.map((e) => e.name).join(" · ")
+                    : null,
                   c.yearsExperience != null ? `${c.yearsExperience} yrs experience` : null,
                 ]
                   .filter(Boolean)

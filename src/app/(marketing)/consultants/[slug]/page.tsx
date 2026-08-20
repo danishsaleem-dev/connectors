@@ -6,6 +6,7 @@ import { ConsultantInquiryForm } from "@/components/ConsultantInquiryForm";
 import { Reveal } from "@/components/Reveal";
 import { ButtonLink, Eyebrow, Section } from "@/components/ui";
 import { getPublishedConsultantBySlug } from "@/lib/db/queries";
+import { stripTags } from "@/lib/portal/rich-text";
 import { resolveMediaUrl } from "@/lib/storage/media";
 
 export async function generateMetadata({
@@ -19,7 +20,9 @@ export async function generateMetadata({
 
   return {
     title: consultant.name,
-    description: consultant.bio ?? `${consultant.name} — consultant at Connectors.`,
+    description:
+      stripTags(consultant.bio).slice(0, 200) ||
+      `${consultant.name} — consultant at Connectors.`,
     alternates: { canonical: `/consultants/${slug}` },
   };
 }
@@ -85,10 +88,10 @@ export default async function ConsultantProfilePage({
                 <div className="mt-6 flex flex-wrap gap-2">
                   {expertise.map((s) => (
                     <span
-                      key={s}
+                      key={s.name}
                       className="rounded-full border border-violet-600/25 bg-violet-50 px-3.5 py-1.5 text-sm text-violet-600"
                     >
-                      {s}
+                      {s.name}
                     </span>
                   ))}
                 </div>
@@ -97,13 +100,13 @@ export default async function ConsultantProfilePage({
 
             {consultant.bio && (
               <Reveal i={3}>
-                <div className="mt-7 space-y-4">
-                  {consultant.bio.split(/\n\s*\n/).map((para, i) => (
-                    <p key={i} className="leading-relaxed text-[var(--muted)] text-pretty">
-                      {para}
-                    </p>
-                  ))}
-                </div>
+                {/* Sanitized on save in the server action (sanitizeRichText),
+                    so this is known-safe HTML rather than whatever was
+                    posted. */}
+                <div
+                  className="rich-text mt-7 leading-relaxed text-[var(--muted)] text-pretty"
+                  dangerouslySetInnerHTML={{ __html: consultant.bio }}
+                />
               </Reveal>
             )}
 
@@ -146,10 +149,17 @@ export default async function ConsultantProfilePage({
 
           <ul className="mt-12 grid gap-x-10 gap-y-1 sm:grid-cols-2">
             {expertise.map((s, i) => (
-              <Reveal as="li" key={s} i={i % 6}>
+              <Reveal as="li" key={s.name} i={i % 6}>
                 <div className="flex items-start gap-3 border-b border-[var(--border)] py-4">
                   <Check size={16} className="mt-0.5 shrink-0 text-violet-600" />
-                  <span className="text-[15px] leading-relaxed">{s}</span>
+                  <div>
+                    <span className="text-[15px] leading-relaxed">{s.name}</span>
+                    {s.description && (
+                      <p className="mt-1 text-sm leading-relaxed text-[var(--muted)]">
+                        {s.description}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </Reveal>
             ))}
