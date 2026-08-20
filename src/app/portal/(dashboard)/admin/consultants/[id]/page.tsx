@@ -85,6 +85,13 @@ export default async function AdminConsultantDetailPage({
               defaultValue={consultant.lastName ?? consultant.name.split(" ").slice(1).join(" ")}
             />
           </Field>
+          <Field label="Title" hint="Optional" className="sm:col-span-2">
+            <Input
+              name="title"
+              defaultValue={consultant.title ?? ""}
+              placeholder="e.g. Hospitality Operations Consultant"
+            />
+          </Field>
           <div className="sm:col-span-2">
             <span className="mb-2 block text-[13px] font-medium">Areas of expertise</span>
             <RepeatableEntries

@@ -71,6 +71,20 @@ export default async function ConsultantProfilePage({
                     </span>
                   </div>
                 )}
+
+                {/* Over the portrait rather than under the bio — it's a
+                    credential, and it reads as one sitting on the person
+                    instead of as another line of body copy. */}
+                {consultant.yearsExperience != null && (
+                  <div className="absolute bottom-4 right-4 flex items-baseline gap-1.5 rounded-2xl bg-[var(--surface)]/95 px-4 py-2.5 shadow-[0_10px_30px_-12px_rgba(20,20,26,0.5)] backdrop-blur-sm">
+                    <span className="font-display text-2xl leading-none text-violet-600">
+                      {consultant.yearsExperience}
+                    </span>
+                    <span className="text-xs leading-none text-[var(--muted)]">
+                      years experience
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </Reveal>
@@ -81,6 +95,9 @@ export default async function ConsultantProfilePage({
             </Reveal>
             <Reveal i={1}>
               <h1 className="font-display display-xl mt-5 text-balance">{consultant.name}</h1>
+              {consultant.title && (
+                <p className="mt-3 text-lg text-[var(--muted)]">{consultant.title}</p>
+              )}
             </Reveal>
 
             {expertise.length > 0 && (
@@ -107,17 +124,6 @@ export default async function ConsultantProfilePage({
                   className="rich-text mt-7 leading-relaxed text-[var(--muted)] text-pretty"
                   dangerouslySetInnerHTML={{ __html: consultant.bio }}
                 />
-              </Reveal>
-            )}
-
-            {consultant.yearsExperience != null && (
-              <Reveal i={4}>
-                <div className="mt-8 flex items-baseline gap-3 border-t border-[var(--border)] pt-6">
-                  <span className="font-display text-4xl text-violet-600">
-                    {consultant.yearsExperience}
-                  </span>
-                  <span className="text-sm text-[var(--muted)]">years of experience</span>
-                </div>
               </Reveal>
             )}
 

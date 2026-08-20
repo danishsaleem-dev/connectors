@@ -44,6 +44,9 @@ export default async function AdminConsultantNewPage() {
           <Field label="Last name">
             <Input name="lastName" placeholder="e.g. Anand" />
           </Field>
+          <Field label="Title" hint="Optional" className="sm:col-span-2">
+            <Input name="title" placeholder="e.g. Hospitality Operations Consultant" />
+          </Field>
           <div className="sm:col-span-2">
             <span className="mb-2 block text-[13px] font-medium">Areas of expertise</span>
             <RepeatableEntries

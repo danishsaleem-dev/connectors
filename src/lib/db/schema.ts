@@ -444,6 +444,10 @@ export const consultants = pgTable("consultants", {
   firstName: text("first_name"),
   lastName: text("last_name"),
   name: text("name").notNull(),
+  /** Professional title shown under the name — "Hospitality Operations
+   * Consultant" and the like. Optional: an older row won't have one, and
+   * the profile reads fine without it. */
+  title: text("title"),
   /** Public URL handle — /consultants/<slug>. Generated from the name once,
    * on create, then left alone: renaming a consultant shouldn't silently
    * break every link already pointing at their profile. */

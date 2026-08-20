@@ -250,6 +250,7 @@ async function writeProfile(type: OrgType, organizationId: string, formData: For
       await db
         .update(consultants)
         .set({
+          title: str(formData, "title"),
           expertise: jsonEntries<ConsultantExpertise>(formData, "expertise"),
           yearsExperience: num(formData, "yearsExperience"),
           bio: sanitizeRichText(str(formData, "bio")),
@@ -517,6 +518,7 @@ export async function saveConsultant(
       firstName,
       lastName,
       name,
+      title: str(formData, "title"),
       photoUrl: str(formData, "photoUrl"),
       expertise: jsonEntries<ConsultantExpertise>(formData, "expertise"),
       yearsExperience: num(formData, "yearsExperience"),
