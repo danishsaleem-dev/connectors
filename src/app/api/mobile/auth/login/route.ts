@@ -1,17 +1,20 @@
 import { NextResponse } from "next/server";
 import { verifyCredentials } from "@/lib/auth/credentials";
-import { createHandoffToken } from "@/lib/auth/session";
+import { mobileProfileFor } from "@/lib/auth/mobile-session";
+import { createHandoffToken, createSessionToken } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
 
 /**
  * JSON login for the mobile app — same credential check as the web login
- * Server Action (verifyCredentials), but returns a short-lived handoff
- * token instead of setting a cookie directly: the app has no browser
- * session to set a cookie on. The app hands this token to /portal/handoff
- * in a real browser to actually get signed in there — see session.ts's
- * createHandoffToken doc comment for why that's a separate, short-lived
- * token rather than the long-lived session token itself.
+ * Server Action (verifyCredentials). Returns two different tokens for two
+ * different jobs: `sessionToken` is the same signed token the web session
+ * cookie carries, for the app to store and send back as a Bearer header on
+ * its own future requests (see mobile-session.ts); `handoffToken` is a
+ * separate, short-lived, single-purpose token the app hands to
+ * /portal/handoff to get a *browser* signed in — see session.ts's
+ * createHandoffToken doc comment for why that can't just be the session
+ * token itself.
  */
 export async function POST(request: Request) {
   let body: { email?: string; password?: string };
@@ -44,16 +47,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Incorrect email or password." }, { status: 401 });
   }
 
-  const handoffToken = await createHandoffToken({
-    userId: user.id,
-    isAdmin: user.isAdmin,
-    organizationId: user.organizationId,
-  });
+  const [handoffToken, sessionToken, profile] = await Promise.all([
+    createHandoffToken({
+      userId: user.id,
+      isAdmin: user.isAdmin,
+      organizationId: user.organizationId,
+    }),
+    createSessionToken({
+      userId: user.id,
+      isAdmin: user.isAdmin,
+      organizationId: user.organizationId,
+    }),
+    mobileProfileFor(user),
+  ]);
 
   return NextResponse.json({
     ok: true,
-    name: user.name,
-    isAdmin: user.isAdmin,
+    name: profile.name,
+    isAdmin: profile.isAdmin,
+    orgType: profile.orgType,
+    orgName: profile.orgName,
     handoffToken,
+    sessionToken,
   });
 }

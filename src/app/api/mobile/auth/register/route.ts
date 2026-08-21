@@ -1,15 +1,18 @@
 import { NextResponse } from "next/server";
 import { createAccount } from "@/lib/auth/create-account";
-import { createHandoffToken } from "@/lib/auth/session";
+import { mobileProfileFor } from "@/lib/auth/mobile-session";
+import { createHandoffToken, createSessionToken } from "@/lib/auth/session";
 import type { OrgType } from "@/lib/db/schema";
 
 export const runtime = "nodejs";
 
 /**
  * JSON registration for the mobile app — same validation and DB writes as
- * the web register Server Action (createAccount), returning a handoff token
- * instead of setting a cookie. New accounts always land on /portal/onboarding,
- * same as a web signup.
+ * the web register Server Action (createAccount). Returns both a session
+ * token (for the app to store and use on its own future requests) and a
+ * handoff token (for getting a browser signed in) — see login/route.ts's
+ * doc comment for why those are two different things. New accounts always
+ * land on /portal/onboarding once handed off, same as a web signup.
  */
 export async function POST(request: Request) {
   let body: {
@@ -39,11 +42,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: result.error }, { status: 400 });
   }
 
-  const handoffToken = await createHandoffToken({
-    userId: result.user.id,
-    isAdmin: false,
-    organizationId: result.user.organizationId,
-  });
+  const [handoffToken, sessionToken, profile] = await Promise.all([
+    createHandoffToken({
+      userId: result.user.id,
+      isAdmin: false,
+      organizationId: result.user.organizationId,
+    }),
+    createSessionToken({
+      userId: result.user.id,
+      isAdmin: false,
+      organizationId: result.user.organizationId,
+    }),
+    mobileProfileFor(result.user),
+  ]);
 
-  return NextResponse.json({ ok: true, name: result.user.name, isAdmin: false, handoffToken });
+  return NextResponse.json({
+    ok: true,
+    name: profile.name,
+    isAdmin: false,
+    orgType: profile.orgType,
+    orgName: profile.orgName,
+    handoffToken,
+    sessionToken,
+  });
 }

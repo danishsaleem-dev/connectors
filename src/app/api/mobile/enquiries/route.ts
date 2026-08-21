@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 import { recordEnquiry } from "@/lib/actions/record-enquiry";
+import { verifyMobileSession } from "@/lib/auth/mobile-session";
 import { site } from "@/lib/site";
 import { brandEnquirySchema, type BrandEnquiryData } from "@/lib/schemas/brand-enquiry";
 import { franchiseEnquirySchema, type FranchiseEnquiryData } from "@/lib/schemas/franchise-enquiry";
@@ -174,8 +175,16 @@ const SOURCES: Record<
  * four Server Actions use, so an app submission lands in the admin queue
  * exactly like a web one. No file uploads (the app's wizard doesn't collect
  * them yet — see EnquiryWizard's FileFieldSpec).
+ *
+ * Auth is read opportunistically, not required: the current app version
+ * always sends a token now that login is mandatory before reaching a form,
+ * but this endpoint is reached by whatever APK a given install happens to
+ * have — there's no store forcing an update — so an older build submitting
+ * with no token at all must keep working exactly as it does today.
  */
 export async function POST(request: Request) {
+  const session = await verifyMobileSession(request);
+
   let body: { source?: string } & Record<string, unknown>;
   try {
     body = await request.json();
@@ -207,6 +216,7 @@ export async function POST(request: Request) {
     companyName: contact.companyName,
     summary: config.summarize(data),
     payload: data,
+    submittedByOrganizationId: session?.organizationId ?? null,
   });
 
   try {

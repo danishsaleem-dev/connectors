@@ -12,7 +12,10 @@ import { enquiries, type EnquirySource } from "@/lib/db/schema";
  * If the visitor was signed into a portal account when they submitted,
  * that account's organization is attached automatically — every one of the
  * four audience forms goes through this one function, so this is the only
- * place that needs to know about the session.
+ * place that needs to know about the session. Read from the cookie by
+ * default, since every existing (web) caller has one; the mobile API has no
+ * cookie to read and passes `submittedByOrganizationId` explicitly instead,
+ * having already verified its own bearer-token session.
  */
 export async function recordEnquiry(entry: {
   source: EnquirySource;
@@ -22,12 +25,15 @@ export async function recordEnquiry(entry: {
   companyName?: string;
   summary: string;
   payload: Record<string, unknown>;
+  submittedByOrganizationId?: string | null;
 }) {
+  const { submittedByOrganizationId, ...rest } = entry;
   try {
-    const user = await getCurrentUser();
-    await getDb()
-      .insert(enquiries)
-      .values({ ...entry, submittedByOrganizationId: user?.organizationId ?? null });
+    const organizationId =
+      submittedByOrganizationId !== undefined
+        ? submittedByOrganizationId
+        : ((await getCurrentUser())?.organizationId ?? null);
+    await getDb().insert(enquiries).values({ ...rest, submittedByOrganizationId: organizationId });
   } catch (err) {
     console.error(`[enquiries] failed to record ${entry.source} enquiry`, err);
   }
