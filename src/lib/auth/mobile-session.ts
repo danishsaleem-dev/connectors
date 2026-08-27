@@ -23,6 +23,10 @@ export type MobileProfile = {
   isAdmin: boolean;
   orgType: string | null;
   orgName: string | null;
+  /** Null until the org finishes /api/mobile/profile's `complete: true`
+   * save (or the website onboarding wizard) — null for admins too, who
+   * have no organization to complete one for. */
+  onboardingCompletedAt: string | null;
 };
 
 /**
@@ -39,11 +43,21 @@ export async function mobileProfileFor(user: {
   organizationId: string | null;
 }): Promise<MobileProfile> {
   if (!user.organizationId) {
-    return { name: user.name, isAdmin: user.isAdmin, orgType: null, orgName: null };
+    return {
+      name: user.name,
+      isAdmin: user.isAdmin,
+      orgType: null,
+      orgName: null,
+      onboardingCompletedAt: null,
+    };
   }
   const db = getDb();
   const [org] = await db
-    .select({ type: organizations.type, name: organizations.name })
+    .select({
+      type: organizations.type,
+      name: organizations.name,
+      onboardingCompletedAt: organizations.onboardingCompletedAt,
+    })
     .from(organizations)
     .where(eq(organizations.id, user.organizationId))
     .limit(1);
@@ -52,6 +66,7 @@ export async function mobileProfileFor(user: {
     isAdmin: user.isAdmin,
     orgType: org?.type ?? null,
     orgName: org?.name ?? null,
+    onboardingCompletedAt: org?.onboardingCompletedAt?.toISOString() ?? null,
   };
 }
 

@@ -129,7 +129,10 @@ function generateTempPassword() {
  * organizationId and the form only submits fields relevant to its type, so
  * branching happens once here rather than in five near-identical actions.
  */
-async function writeProfile(type: OrgType, organizationId: string, formData: FormData) {
+/** Exported for /api/mobile/profile — the mobile app's profile-completion
+ * flow writes through this exact same reader, not a re-implementation of
+ * it, so the two surfaces can never drift on what a field means. */
+export async function writeProfile(type: OrgType, organizationId: string, formData: FormData) {
   const db = getDb();
   switch (type) {
     case "brand": {
