@@ -27,6 +27,7 @@ import {
 } from "@/components/portal/ui";
 import { ButtonLink } from "@/components/ui";
 import { ORG_TYPES, REQUEST_TYPE_LABEL, orgTypeMeta } from "@/lib/portal/domain";
+import { orgHref } from "@/lib/portal/admin-href";
 import type { OrgType } from "@/lib/db/schema";
 
 export const metadata: Metadata = {
@@ -207,7 +208,7 @@ export default async function AdminOverviewPage() {
               return (
                 <RecordRow
                   key={org.id}
-                  href={`/portal/admin/${meta.slug}/${org.id}`}
+                  href={orgHref(org)}
                   title={org.name}
                   subtitle={meta.singular}
                   facts={[{ label: "Added", value: ago(org.createdAt) }]}

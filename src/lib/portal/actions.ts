@@ -32,6 +32,7 @@ import {
 } from "@/lib/db/schema";
 import { site } from "@/lib/site";
 import { slugTakenByOther, uniqueConsultantSlug } from "./consultant-slug";
+import { uniqueOrganizationSlug, uniquePropertySlug } from "./admin-slug";
 import { sanitizeRichText } from "./rich-text";
 import { slugify } from "./domain";
 import { requireAdminUser, requireOrgUser } from "./guards";
@@ -400,7 +401,10 @@ export async function saveProperty(
             : and(eq(properties.id, id), eq(properties.organizationId, organizationId)),
         );
     } else {
-      await db.insert(properties).values(values);
+      await db.insert(properties).values({
+        ...values,
+        slug: await uniquePropertySlug(values.title, values.city),
+      });
     }
 
     revalidatePortal();
@@ -600,7 +604,11 @@ export async function createConsultantLogin(
 
     const [org] = await db
       .insert(organizations)
-      .values({ name: consultant.name, type: "consultant" })
+      .values({
+        name: consultant.name,
+        type: "consultant",
+        slug: await uniqueOrganizationSlug(consultant.name),
+      })
       .returning();
 
     await db
@@ -848,7 +856,7 @@ export async function createOrganization(
     const db = getDb();
     const [org] = await db
       .insert(organizations)
-      .values({ name, type, status: "active" })
+      .values({ name, type, status: "active", slug: await uniqueOrganizationSlug(name) })
       .returning();
 
     // Mirrors registration: give every organization its profile row up front

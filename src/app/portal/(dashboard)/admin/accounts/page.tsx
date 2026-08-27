@@ -10,6 +10,7 @@ import { ResetPasswordButton } from "@/components/portal/ResetPasswordButton";
 import { EmptyState, Pill, RecordList, RecordRow } from "@/components/portal/ui";
 import { ButtonLink } from "@/components/ui";
 import { orgTypeMeta } from "@/lib/portal/domain";
+import { orgHref } from "@/lib/portal/admin-href";
 
 export const metadata: Metadata = {
   title: "Accounts",
@@ -56,7 +57,7 @@ export default async function AdminAccountsPage({
         <RecordList>
           {filteredUsers.map((user) => {
             const org = user.organizationId ? orgById.get(user.organizationId) : undefined;
-            const orgHref = org ? `/portal/admin/${orgTypeMeta(org.type).slug}/${org.id}` : undefined;
+            const href = org ? orgHref(org) : undefined;
             return (
               <RecordRow
                 key={user.id}
@@ -64,8 +65,8 @@ export default async function AdminAccountsPage({
                 // and nesting a <form> inside an <a> is invalid HTML. The
                 // name is the click target instead.
                 title={
-                  orgHref ? (
-                    <Link href={orgHref} className="hover:text-violet-600">
+                  href ? (
+                    <Link href={href} className="hover:text-violet-600">
                       {user.name}
                     </Link>
                   ) : (

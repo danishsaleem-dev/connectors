@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { asc, desc, eq } from "drizzle-orm";
+import { asc, desc, eq, or } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth/current-user";
 import { getDb } from "@/lib/db/client";
 import { getProfile } from "@/lib/db/queries";
@@ -16,6 +16,7 @@ import {
 import { ActionForm } from "@/components/portal/ActionForm";
 import { AddressPicker } from "@/components/portal/AddressPicker";
 import { DocumentUpload } from "@/components/portal/DocumentUpload";
+import { PageTabs } from "@/components/portal/FormSections";
 import { MessageThread } from "@/components/portal/MessageThread";
 import { PortalHeader } from "@/components/portal/PortalHeader";
 import { DocumentLink } from "@/components/portal/PropertyMedia";
@@ -42,6 +43,7 @@ import {
   REQUEST_TYPE_LABEL,
   orgTypeBySlug,
 } from "@/lib/portal/domain";
+import { isUuid, propertyHref } from "@/lib/portal/admin-href";
 
 export const metadata: Metadata = {
   title: "Organization",
@@ -51,17 +53,29 @@ export const metadata: Metadata = {
 export default async function AdminOrgDetailPage({
   params,
 }: {
-  params: Promise<{ orgType: string; id: string }>;
+  params: Promise<{ orgType: string; handle: string }>;
 }) {
   await requireAdmin();
-  const { orgType, id } = await params;
+  const { orgType, handle } = await params;
   const meta = orgTypeBySlug(orgType);
   if (!meta) notFound();
 
   const db = getDb();
-  const [org] = await db.select().from(organizations).where(eq(organizations.id, id)).limit(1);
-  // Guard the type too, so /admin/brands/<a-landlord-id> 404s rather than
-  // rendering the wrong profile form.
+  // Slug first — that's what links carry now. The uuid branch is only
+  // included when the handle is uuid-shaped: `organizations.id` is a uuid
+  // column and Postgres casts every OR branch up front, so comparing it to
+  // a slug fails the whole query instead of falling through.
+  const [org] = await db
+    .select()
+    .from(organizations)
+    .where(
+      isUuid(handle)
+        ? or(eq(organizations.slug, handle), eq(organizations.id, handle))
+        : eq(organizations.slug, handle),
+    )
+    .limit(1);
+  // Guard the type too, so /admin/brands/<a-landlord-handle> 404s rather
+  // than rendering the wrong profile form.
   if (!org || org.type !== meta.type) notFound();
 
   const [profile, orgUsers, orgProperties, orgRequests, orgDocs, orgMessages, orgFranchises] =
@@ -112,7 +126,13 @@ export default async function AdminOrgDetailPage({
         }
       />
 
-      <Panel title="Details">
+      <PageTabs
+        sections={[
+          {
+            id: "details",
+            label: "Details",
+            content: (
+              <Panel>
         <ActionForm
           action={updateOrganization}
           submitLabel="Save changes"
@@ -141,10 +161,15 @@ export default async function AdminOrgDetailPage({
             logoPreview={logoPath ? { path: logoPath, url: logoUrl } : null}
           />
         </ActionForm>
-      </Panel>
-
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <Panel title="Accounts">
+              </Panel>
+            ),
+          },
+          {
+            id: "accounts",
+            label: "Accounts",
+            badge: orgUsers.length,
+            content: (
+              <Panel>
           {orgUsers.length === 0 ? (
             <EmptyState>No portal accounts yet.</EmptyState>
           ) : (
@@ -159,10 +184,16 @@ export default async function AdminOrgDetailPage({
               ))}
             </div>
           )}
-        </Panel>
-
-        {meta.listsProperties && (
-          <Panel title="Properties">
+              </Panel>
+            ),
+          },
+          ...(meta.listsProperties
+            ? [{
+                id: "properties",
+                label: "Properties",
+                badge: orgProperties.length,
+                content: (
+          <Panel>
             {orgProperties.length === 0 ? (
               <EmptyState>No space listed yet.</EmptyState>
             ) : (
@@ -170,6 +201,7 @@ export default async function AdminOrgDetailPage({
                 {orgProperties.map((property) => (
                   <ListRow
                     key={property.id}
+                    href={propertyHref(property)}
                     title={property.title}
                     meta={`${property.city}${property.sizeSqft ? ` · ${property.sizeSqft} sq ft` : ""}`}
                     trailing={
@@ -246,10 +278,16 @@ export default async function AdminOrgDetailPage({
               </ActionForm>
             </div>
           </Panel>
-        )}
-
-        {meta.requestTypes.length > 0 && (
-          <Panel title="Requests">
+                ),
+              }]
+            : []),
+          ...(meta.requestTypes.length > 0
+            ? [{
+                id: "requests",
+                label: "Requests",
+                badge: orgRequests.length,
+                content: (
+          <Panel>
             {orgRequests.length === 0 ? (
               <EmptyState>No requests submitted.</EmptyState>
             ) : (
@@ -270,11 +308,16 @@ export default async function AdminOrgDetailPage({
               </div>
             )}
           </Panel>
-        )}
-      </div>
-
-      {org.type === "brand" && (
-        <Panel title="Franchise opportunities" className="mt-6">
+                ),
+              }]
+            : []),
+          ...(org.type === "brand"
+            ? [{
+                id: "franchises",
+                label: "Franchise opportunities",
+                badge: orgFranchises.length,
+                content: (
+        <Panel>
           {orgFranchises.length === 0 ? (
             <EmptyState>No franchise opportunities listed for this brand yet.</EmptyState>
           ) : (
@@ -370,9 +413,15 @@ export default async function AdminOrgDetailPage({
             </ActionForm>
           </div>
         </Panel>
-      )}
-
-      <Panel title="Documents" className="mt-6">
+                ),
+              }]
+            : []),
+          {
+            id: "documents",
+            label: "Documents",
+            badge: orgDocs.length,
+            content: (
+      <Panel>
         <div className="space-y-2">
           {orgDocs.length === 0 ? (
             <EmptyState>No documents shared.</EmptyState>
@@ -408,14 +457,24 @@ export default async function AdminOrgDetailPage({
           </ActionForm>
         </div>
       </Panel>
-
-      <Panel title="Messages" className="mt-6">
-        <MessageThread
-          messages={orgMessages}
-          action={postMessage}
-          hiddenFields={{ organizationId: org.id }}
-        />
-      </Panel>
+            ),
+          },
+          {
+            id: "messages",
+            label: "Messages",
+            badge: orgMessages.length,
+            content: (
+              <Panel>
+                <MessageThread
+                  messages={orgMessages}
+                  action={postMessage}
+                  hiddenFields={{ organizationId: org.id }}
+                />
+              </Panel>
+            ),
+          },
+        ]}
+      />
     </div>
   );
 }

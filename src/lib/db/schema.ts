@@ -48,6 +48,14 @@ export const orgStatusEnum = pgEnum("org_status", ["pending", "active", "suspend
 export const organizations = pgTable("organizations", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
+  /** Readable handle for the admin URL — /portal/admin/landlords/<slug>.
+   * Purely internal (an organization has no public page), but a uuid in the
+   * address bar tells an admin nothing about which record they're editing.
+   * Nullable because rows created before this existed have none, and the
+   * detail route still resolves a uuid for those. Generated from the name
+   * on create, then left alone — renaming shouldn't silently break links
+   * an admin has bookmarked. */
+  slug: text("slug").unique(),
   type: orgTypeEnum("type").notNull(),
   status: orgStatusEnum("status").notNull().default("pending"),
   /** Set when the participant finishes the profile wizard. Null means they
@@ -216,6 +224,11 @@ export const properties = pgTable("properties", {
     .notNull()
     .references(() => organizations.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
+  /** Readable handle for the admin URL — see organizations.slug for the
+   * reasoning. Derived from the title, with the city appended when two
+   * listings share a title (which they do — "Ground Floor Retail Unit" is
+   * not a distinctive name). */
+  slug: text("slug").unique(),
   propertyType: propertyTypeEnum("property_type").notNull().default("retail_shop"),
   city: text("city").notNull(),
   country: text("country"),

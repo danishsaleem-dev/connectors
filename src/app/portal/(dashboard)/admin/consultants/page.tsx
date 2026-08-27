@@ -7,7 +7,7 @@ import { PortalHeader } from "@/components/portal/PortalHeader";
 import { EmptyState, Pill, RecordList, RecordRow, TagRun } from "@/components/portal/ui";
 import { ButtonLink, Select } from "@/components/ui";
 import { setConsultantPublished } from "@/lib/portal/actions";
-import { consultantHref } from "@/lib/portal/consultant-href";
+import { consultantHref } from "@/lib/portal/admin-href";
 
 export const metadata: Metadata = {
   title: "Consultants",

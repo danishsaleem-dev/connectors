@@ -13,6 +13,7 @@ import {
   properties,
   requests,
 } from "@/lib/db/schema";
+import { uniqueOrganizationSlug, uniquePropertySlug } from "./admin-slug";
 import { requireAdminUser } from "./guards";
 import type { ActionState } from "./actions";
 import type { BrandEnquiryData } from "@/lib/schemas/brand-enquiry";
@@ -93,6 +94,7 @@ export async function convertEnquiry(
       .insert(organizations)
       .values({
         name: orgName,
+        slug: await uniqueOrganizationSlug(orgName),
         type: enquiry.source,
         status: "active",
         // The enquiry already supplied the qualifying data our own onboarding
@@ -154,6 +156,7 @@ export async function convertEnquiry(
         await db.insert(properties).values({
           organizationId: org.id,
           title: data.address,
+          slug: await uniquePropertySlug(data.address, cities[0]),
           city: cities[0] ?? "Unknown",
           propertyType: PROPERTY_TYPE_FROM_LABEL[data.propertyTypes[0]] ?? "retail_shop",
           sizeSqft: data.totalAreaSqFt,

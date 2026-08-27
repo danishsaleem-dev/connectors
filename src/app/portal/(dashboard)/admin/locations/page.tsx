@@ -10,6 +10,7 @@ import { EmptyState, RecordList, RecordRow, formatMoney } from "@/components/por
 import { ButtonLink, Select } from "@/components/ui";
 import { setPropertyStatus, toggleFeatured } from "@/lib/portal/actions";
 import { PROPERTY_STATUS_LABEL, PROPERTY_TYPE_LABEL } from "@/lib/portal/domain";
+import { propertyHref } from "@/lib/portal/admin-href";
 
 export const metadata: Metadata = {
   title: "Locations",
@@ -79,7 +80,7 @@ export default async function AdminLocationsPage({
                 // same reasoning as the accounts and org-type list pages.
                 title={
                   <Link
-                    href={`/portal/admin/locations/${property.id}`}
+                    href={propertyHref(property)}
                     className="hover:text-violet-600"
                   >
                     {property.title}

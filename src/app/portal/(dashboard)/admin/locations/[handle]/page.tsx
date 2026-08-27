@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth/current-user";
 import { getDb } from "@/lib/db/client";
 import { properties } from "@/lib/db/schema";
@@ -15,6 +15,7 @@ import { Panel } from "@/components/portal/ui";
 import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui";
 import { deleteProperty, saveProperty } from "@/lib/portal/actions";
 import { PROPERTY_STATUS_LABEL, PROPERTY_TYPE_LABEL } from "@/lib/portal/domain";
+import { isUuid } from "@/lib/portal/admin-href";
 
 export const metadata: Metadata = {
   title: "Edit location",
@@ -24,12 +25,22 @@ export const metadata: Metadata = {
 export default async function AdminLocationDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ handle: string }>;
 }) {
   await requireAdmin();
-  const { id } = await params;
+  const { handle } = await params;
 
-  const [location] = await getDb().select().from(properties).where(eq(properties.id, id)).limit(1);
+  // Slug first — see admin-href's isUuid for why the uuid branch is
+  // conditional rather than always part of the OR.
+  const [location] = await getDb()
+    .select()
+    .from(properties)
+    .where(
+      isUuid(handle)
+        ? or(eq(properties.slug, handle), eq(properties.id, handle))
+        : eq(properties.slug, handle),
+    )
+    .limit(1);
   if (!location) notFound();
 
   const owners = await listPropertyOwners();

@@ -12,6 +12,7 @@ import { EmptyState, Pill, RecordList, RecordRow } from "@/components/portal/ui"
 import { ButtonLink, Select } from "@/components/ui";
 import { updateOrganization } from "@/lib/portal/actions";
 import { orgTypeBySlug } from "@/lib/portal/domain";
+import { orgHref } from "@/lib/portal/admin-href";
 
 const STATUS_OPTIONS = [
   { value: "pending", label: "Pending" },
@@ -97,7 +98,7 @@ export default async function AdminOrgTypeListPage({
               // HTML. The org name is the click target instead.
               title={
                 <Link
-                  href={`/portal/admin/${meta.slug}/${org.id}`}
+                  href={orgHref(org)}
                   className="hover:text-violet-600"
                 >
                   {org.name}

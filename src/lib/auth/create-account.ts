@@ -121,7 +121,10 @@ export async function createAccount(input: CreateAccountInput): Promise<CreateAc
     const [existing] = await db.select().from(users).where(eq(users.email, email)).limit(1);
     if (existing) return { ok: false, error: "An account with that email already exists." };
 
-    const [org] = await db.insert(organizations).values({ name: orgName, type }).returning();
+    const [org] = await db
+      .insert(organizations)
+      .values({ name: orgName, type, slug: await uniqueOrganizationSlug(orgName) })
+      .returning();
 
     await createProfileFor(type, org.id, orgName, discipline);
 
@@ -137,3 +140,4 @@ export async function createAccount(input: CreateAccountInput): Promise<CreateAc
     return { ok: false, error: "Something went wrong creating your account. Please try again." };
   }
 }
+import { uniqueOrganizationSlug } from "@/lib/portal/admin-slug";

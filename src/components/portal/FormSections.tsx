@@ -18,8 +18,12 @@ import type { ReactNode } from "react";
  */
 export function FormSections({
   sections,
+  /** Wrapper for each panel's content. Defaults to the two-column field
+   * grid a form wants; page-level tabs pass their own (see PageTabs). */
+  contentClassName = "grid gap-4 sm:grid-cols-2",
 }: {
   sections: { id: string; label: string; badge?: number; content: ReactNode }[];
+  contentClassName?: string;
 }) {
   const [active, setActive] = useState(sections[0]?.id);
 
@@ -56,9 +60,27 @@ export function FormSections({
 
       {sections.map((section) => (
         <div key={section.id} hidden={section.id !== active}>
-          <div className="grid gap-4 sm:grid-cols-2">{section.content}</div>
+          <div className={contentClassName}>{section.content}</div>
         </div>
       ))}
     </div>
   );
+}
+
+/**
+ * The same tab strip for a *page* rather than a form — the org detail page
+ * carries seven independent sections (details, accounts, properties,
+ * requests, franchise opportunities, documents, messages), which as one
+ * vertical stack is a very long scroll where unrelated panels of wildly
+ * different heights sit beside each other.
+ *
+ * Panels here are still hidden rather than unmounted: several contain their
+ * own forms with half-typed input, and switching tabs shouldn't discard it.
+ */
+export function PageTabs({
+  sections,
+}: {
+  sections: { id: string; label: string; badge?: number; content: ReactNode }[];
+}) {
+  return <FormSections sections={sections} contentClassName="" />;
 }
