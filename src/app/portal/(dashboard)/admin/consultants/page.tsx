@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/current-user";
 import { listAllConsultants } from "@/lib/db/queries";
 import { ActionForm } from "@/components/portal/ActionForm";
 import { ListToolbar, matchesQuery } from "@/components/portal/ListToolbar";
 import { PortalHeader } from "@/components/portal/PortalHeader";
-import { EmptyState, ListRow, Pill } from "@/components/portal/ui";
+import { EmptyState, Pill, RecordList, RecordRow, TagRun } from "@/components/portal/ui";
 import { ButtonLink, Select } from "@/components/ui";
 import { setConsultantPublished } from "@/lib/portal/actions";
+import { consultantHref } from "@/lib/portal/consultant-href";
 
 export const metadata: Metadata = {
   title: "Consultants",
@@ -18,6 +18,17 @@ const STATUS_OPTIONS = [
   { value: "true", label: "Published" },
   { value: "false", label: "Draft" },
 ];
+
+/** Initials for the roster avatar — a photo isn't guaranteed, and a
+ * consistent circle keeps the rows aligned whether or not there is one. */
+function initials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
 
 export default async function AdminConsultantsPage({
   searchParams,
@@ -34,11 +45,13 @@ export default async function AdminConsultantsPage({
       (!status || String(c.isPublished) === status),
   );
 
+  const published = allRows.filter((c) => c.isPublished).length;
+
   return (
     <div>
       <PortalHeader
         title="Consultants"
-        subtitle={`${allRows.length} ${allRows.length === 1 ? "record" : "records"}`}
+        subtitle={`${allRows.length} ${allRows.length === 1 ? "record" : "records"} · ${published} published`}
         action={
           <ButtonLink href="/portal/admin/consultants/new" size="sm">
             Add consultant
@@ -54,61 +67,67 @@ export default async function AdminConsultantsPage({
         statusValue={status}
       />
 
-      <div className="space-y-2">
-        {allRows.length === 0 ? (
-          <EmptyState>No consultants yet.</EmptyState>
-        ) : rows.length === 0 ? (
-          <EmptyState>No consultants match that search.</EmptyState>
-        ) : (
-          rows.map((c) => (
-            <ListRow
+      {allRows.length === 0 ? (
+        <EmptyState>No consultants yet.</EmptyState>
+      ) : rows.length === 0 ? (
+        <EmptyState>No consultants match that search.</EmptyState>
+      ) : (
+        <RecordList>
+          {rows.map((c) => (
+            <RecordRow
               key={c.id}
-              title={
-                <Link href={`/portal/admin/consultants/${c.id}`} className="hover:text-violet-600">
-                  {c.name}
-                </Link>
+              href={consultantHref(c)}
+              title={c.name}
+              subtitle={c.title ?? undefined}
+              leading={
+                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-violet-50 text-xs font-semibold text-violet-600">
+                  {initials(c.name)}
+                </span>
               }
-              meta={
-                [
-                  c.expertise && c.expertise.length > 0
-                    ? c.expertise.map((e) => e.name).join(" · ")
-                    : null,
-                  c.yearsExperience != null ? `${c.yearsExperience} yrs experience` : null,
-                ]
-                  .filter(Boolean)
-                  .join(" — ") || undefined
+              facts={[
+                {
+                  label: "Expertise",
+                  value:
+                    c.expertise && c.expertise.length > 0 ? (
+                      <TagRun items={c.expertise.map((e) => e.name)} max={2} />
+                    ) : null,
+                },
+                {
+                  label: "Experience",
+                  value: c.yearsExperience != null ? `${c.yearsExperience} yrs` : null,
+                },
+              ]}
+              status={
+                <Pill tone={c.isPublished ? "green" : "amber"}>
+                  {c.isPublished ? "Published" : "Draft"}
+                </Pill>
               }
-              trailing={
-                <div className="flex items-center gap-2">
-                  <Pill tone={c.isPublished ? "green" : "amber"}>
-                    {c.isPublished ? "Published" : "Draft"}
-                  </Pill>
-                  <ActionForm
-                    action={setConsultantPublished}
-                    submitLabel="Update"
-                    pendingLabel="…"
-                    successMessage="Updated."
-                    hiddenFields={{ id: c.id }}
-                    size="sm"
-                    variant="secondary"
-                    layout="inline"
-                  >
-                    <span className="w-28 shrink-0">
-                      <Select name="isPublished" defaultValue={String(c.isPublished)}>
-                        {STATUS_OPTIONS.map((o) => (
-                          <option key={o.value} value={o.value}>
-                            {o.label}
-                          </option>
-                        ))}
-                      </Select>
-                    </span>
-                  </ActionForm>
-                </div>
+              actions={
+                <ActionForm
+                  action={setConsultantPublished}
+                  submitLabel="Update"
+                  pendingLabel="…"
+                  successMessage="Updated."
+                  hiddenFields={{ id: c.id }}
+                  size="sm"
+                  variant="secondary"
+                  layout="inline"
+                >
+                  <span className="w-28 shrink-0">
+                    <Select name="isPublished" defaultValue={String(c.isPublished)}>
+                      {STATUS_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </span>
+                </ActionForm>
               }
             />
-          ))
-        )}
-      </div>
+          ))}
+        </RecordList>
+      )}
     </div>
   );
 }

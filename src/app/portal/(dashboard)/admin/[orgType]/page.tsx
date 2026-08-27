@@ -8,7 +8,7 @@ import { organizations } from "@/lib/db/schema";
 import { ActionForm } from "@/components/portal/ActionForm";
 import { ListToolbar, matchesQuery } from "@/components/portal/ListToolbar";
 import { PortalHeader } from "@/components/portal/PortalHeader";
-import { EmptyState, ListRow, Pill } from "@/components/portal/ui";
+import { EmptyState, Pill, RecordList, RecordRow } from "@/components/portal/ui";
 import { ButtonLink, Select } from "@/components/ui";
 import { updateOrganization } from "@/lib/portal/actions";
 import { orgTypeBySlug } from "@/lib/portal/domain";
@@ -83,17 +83,17 @@ export default async function AdminOrgTypeListPage({
         statusValue={status}
       />
 
-      <div className="space-y-2">
-        {allRows.length === 0 ? (
-          <EmptyState>No {meta.plural.toLowerCase()} yet.</EmptyState>
-        ) : rows.length === 0 ? (
-          <EmptyState>No {meta.plural.toLowerCase()} match that search.</EmptyState>
-        ) : (
-          rows.map((org) => (
-            <ListRow
+      {allRows.length === 0 ? (
+        <EmptyState>No {meta.plural.toLowerCase()} yet.</EmptyState>
+      ) : rows.length === 0 ? (
+        <EmptyState>No {meta.plural.toLowerCase()} match that search.</EmptyState>
+      ) : (
+        <RecordList>
+          {rows.map((org) => (
+            <RecordRow
               key={org.id}
-              // Not passed as `href` — trailing holds a <form>, and nesting
-              // a form inside the <a> that href wraps the row in is invalid
+              // Not passed as `href` — actions holds a <form>, and nesting a
+              // form inside the <a> that href wraps the row in is invalid
               // HTML. The org name is the click target instead.
               title={
                 <Link
@@ -103,44 +103,55 @@ export default async function AdminOrgTypeListPage({
                   {org.name}
                 </Link>
               }
-              meta={[org.country, org.phone].filter(Boolean).join(" · ") || undefined}
-              trailing={
-                <div className="flex items-center gap-2">
-                  <Pill tone={org.onboardingCompletedAt ? "green" : "amber"}>
-                    {org.onboardingCompletedAt ? "Onboarded" : "Pending"}
-                  </Pill>
-                  {/* Quick status change, right from the list — the full
-                      profile edit still lives on the detail page. */}
-                  <ActionForm
-                    action={updateOrganization}
-                    submitLabel="Update"
-                    pendingLabel="…"
-                    successMessage="Updated."
-                    hiddenFields={{ id: org.id }}
-                    size="sm"
-                    variant="secondary"
-                    layout="inline"
-                  >
-                    {/* Select's shared style hardcodes w-full — that conflicts
-                        with a width class passed directly to it the same way
-                        the grid-cols override did, so the width lives on this
-                        wrapper instead. */}
-                    <span className="w-32 shrink-0">
-                      <Select name="status" defaultValue={org.status}>
-                        {STATUS_OPTIONS.map((o) => (
-                          <option key={o.value} value={o.value}>
-                            {o.label}
-                          </option>
-                        ))}
-                      </Select>
-                    </span>
-                  </ActionForm>
-                </div>
+              subtitle={org.country ?? undefined}
+              facts={[
+                { label: "Phone", value: org.phone },
+                {
+                  label: "Added",
+                  value: org.createdAt.toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  }),
+                },
+              ]}
+              status={
+                <Pill tone={org.onboardingCompletedAt ? "green" : "amber"}>
+                  {org.onboardingCompletedAt ? "Onboarded" : "Pending"}
+                </Pill>
+              }
+              actions={
+                /* Quick status change, right from the list — the full
+                   profile edit still lives on the detail page. */
+                <ActionForm
+                  action={updateOrganization}
+                  submitLabel="Update"
+                  pendingLabel="…"
+                  successMessage="Updated."
+                  hiddenFields={{ id: org.id }}
+                  size="sm"
+                  variant="secondary"
+                  layout="inline"
+                >
+                  {/* Select's shared style hardcodes w-full — that conflicts
+                      with a width class passed directly to it the same way
+                      the grid-cols override did, so the width lives on this
+                      wrapper instead. */}
+                  <span className="w-32 shrink-0">
+                    <Select name="status" defaultValue={org.status}>
+                      {STATUS_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </span>
+                </ActionForm>
               }
             />
-          ))
-        )}
-      </div>
+          ))}
+        </RecordList>
+      )}
     </div>
   );
 }

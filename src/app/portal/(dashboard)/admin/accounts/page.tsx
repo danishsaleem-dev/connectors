@@ -7,7 +7,7 @@ import { DeleteUserButton } from "@/components/portal/DeleteUserButton";
 import { ListToolbar, matchesQuery } from "@/components/portal/ListToolbar";
 import { PortalHeader } from "@/components/portal/PortalHeader";
 import { ResetPasswordButton } from "@/components/portal/ResetPasswordButton";
-import { EmptyState, ListRow, Pill } from "@/components/portal/ui";
+import { EmptyState, Pill, RecordList, RecordRow } from "@/components/portal/ui";
 import { ButtonLink } from "@/components/ui";
 import { orgTypeMeta } from "@/lib/portal/domain";
 
@@ -48,20 +48,20 @@ export default async function AdminAccountsPage({
 
       <ListToolbar action="/portal/admin/accounts" placeholder="Search by name, email or organization…" query={q} />
 
-      <div className="space-y-2">
-        {allUsers.length === 0 ? (
-          <EmptyState>No accounts yet.</EmptyState>
-        ) : filteredUsers.length === 0 ? (
-          <EmptyState>No accounts match that search.</EmptyState>
-        ) : (
-          filteredUsers.map((user) => {
+      {allUsers.length === 0 ? (
+        <EmptyState>No accounts yet.</EmptyState>
+      ) : filteredUsers.length === 0 ? (
+        <EmptyState>No accounts match that search.</EmptyState>
+      ) : (
+        <RecordList>
+          {filteredUsers.map((user) => {
             const org = user.organizationId ? orgById.get(user.organizationId) : undefined;
             const orgHref = org ? `/portal/admin/${orgTypeMeta(org.type).slug}/${org.id}` : undefined;
             return (
-              <ListRow
+              <RecordRow
                 key={user.id}
-                // The row itself isn't a link — trailing holds a real button,
-                // and nesting a <form> inside an <a> is invalid HTML. The org
+                // The row itself isn't a link — actions holds real buttons,
+                // and nesting a <form> inside an <a> is invalid HTML. The
                 // name is the click target instead.
                 title={
                   orgHref ? (
@@ -72,12 +72,15 @@ export default async function AdminAccountsPage({
                     user.name
                   )
                 }
-                meta={[user.email, org?.name].filter(Boolean).join(" · ")}
-                trailing={
+                subtitle={user.email}
+                facts={[{ label: "Organization", value: org?.name }]}
+                status={
+                  <Pill tone={user.isAdmin ? "violet" : "neutral"}>
+                    {user.isAdmin ? "Admin" : org ? orgTypeMeta(org.type).singular : "No org"}
+                  </Pill>
+                }
+                actions={
                   <div className="flex items-center gap-3">
-                    <Pill tone={user.isAdmin ? "violet" : "neutral"}>
-                      {user.isAdmin ? "Admin" : org ? orgTypeMeta(org.type).singular : "No org"}
-                    </Pill>
                     <ResetPasswordButton userId={user.id} />
                     {user.id !== currentUser.id && (
                       <DeleteUserButton userId={user.id} name={user.name} />
@@ -86,9 +89,9 @@ export default async function AdminAccountsPage({
                 }
               />
             );
-          })
-        )}
-      </div>
+          })}
+        </RecordList>
+      )}
     </div>
   );
 }

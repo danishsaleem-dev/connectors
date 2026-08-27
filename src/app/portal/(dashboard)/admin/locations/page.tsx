@@ -6,7 +6,7 @@ import { listAllProperties } from "@/lib/db/queries";
 import { ActionForm } from "@/components/portal/ActionForm";
 import { ListToolbar, matchesQuery } from "@/components/portal/ListToolbar";
 import { PortalHeader } from "@/components/portal/PortalHeader";
-import { EmptyState, ListRow, formatMoney } from "@/components/portal/ui";
+import { EmptyState, RecordList, RecordRow, formatMoney } from "@/components/portal/ui";
 import { ButtonLink, Select } from "@/components/ui";
 import { setPropertyStatus, toggleFeatured } from "@/lib/portal/actions";
 import { PROPERTY_STATUS_LABEL, PROPERTY_TYPE_LABEL } from "@/lib/portal/domain";
@@ -55,13 +55,13 @@ export default async function AdminLocationsPage({
         statusValue={status}
       />
 
-      <div className="space-y-2">
-        {allRows.length === 0 ? (
-          <EmptyState>No locations listed yet.</EmptyState>
-        ) : rows.length === 0 ? (
-          <EmptyState>No locations match that search.</EmptyState>
-        ) : (
-          rows.map((property) => {
+      {allRows.length === 0 ? (
+        <EmptyState>No locations listed yet.</EmptyState>
+      ) : rows.length === 0 ? (
+        <EmptyState>No locations match that search.</EmptyState>
+      ) : (
+        <RecordList>
+          {rows.map((property) => {
             const rent = formatMoney(property.rentAmount, property.currency);
 
             // Plain <form>, not an ActionForm — a single-icon fire-and-forget
@@ -73,9 +73,9 @@ export default async function AdminLocationsPage({
             }
 
             return (
-              <ListRow
+              <RecordRow
                 key={property.id}
-                // trailing holds forms, so the row itself isn't the link —
+                // actions holds forms, so the row itself isn't the link —
                 // same reasoning as the accounts and org-type list pages.
                 title={
                   <Link
@@ -85,17 +85,23 @@ export default async function AdminLocationsPage({
                     {property.title}
                   </Link>
                 }
-                meta={[
-                  property.organizationName,
-                  property.city,
-                  PROPERTY_TYPE_LABEL[property.propertyType] ?? property.propertyType,
-                  property.sizeSqft ? `${property.sizeSqft.toLocaleString()} sq ft` : null,
-                  property.dimensions,
-                  rent ? `${rent}/mo` : null,
-                ]
+                subtitle={[property.organizationName, property.city]
                   .filter(Boolean)
                   .join(" · ")}
-                trailing={
+                facts={[
+                  {
+                    label: "Type",
+                    value: PROPERTY_TYPE_LABEL[property.propertyType] ?? property.propertyType,
+                  },
+                  {
+                    label: "Size",
+                    value: property.sizeSqft
+                      ? `${property.sizeSqft.toLocaleString()} sq ft`
+                      : property.dimensions,
+                  },
+                  { label: "Rent", value: rent ? `${rent}/mo` : null },
+                ]}
+                actions={
                   <div className="flex items-center gap-3">
                     <form action={toggleFeaturedAction}>
                       <input type="hidden" name="id" value={property.id} />
@@ -136,9 +142,9 @@ export default async function AdminLocationsPage({
                 }
               />
             );
-          })
-        )}
-      </div>
+          })}
+        </RecordList>
+      )}
     </div>
   );
 }

@@ -7,7 +7,7 @@ import { enquiries } from "@/lib/db/schema";
 import { ActionForm } from "@/components/portal/ActionForm";
 import { ListToolbar, matchesQuery } from "@/components/portal/ListToolbar";
 import { PortalHeader } from "@/components/portal/PortalHeader";
-import { EmptyState, ListRow, Pill } from "@/components/portal/ui";
+import { EmptyState, Pill, RecordList, RecordRow } from "@/components/portal/ui";
 import { archiveEnquiry } from "@/lib/portal/enquiry-convert";
 import { orgTypeMeta } from "@/lib/portal/domain";
 
@@ -68,11 +68,11 @@ export default async function AdminEnquiriesPage({
       ) : rows.length === 0 ? (
         <EmptyState>No enquiries match that search.</EmptyState>
       ) : (
-        <div className="space-y-2">
+        <RecordList>
           {rows.map((enquiry) => (
-            <ListRow
+            <RecordRow
               key={enquiry.id}
-              // trailing holds a <form> when the enquiry is still archivable,
+              // actions holds a <form> when the enquiry is still archivable,
               // so the row itself isn't the link — same reasoning as the
               // other list pages.
               title={
@@ -83,8 +83,19 @@ export default async function AdminEnquiriesPage({
                   {enquiry.companyName || enquiry.name}
                 </Link>
               }
-              meta={`${orgTypeMeta(enquiry.source).singular} · ${enquiry.email} · ${enquiry.createdAt.toLocaleDateString()}`}
-              trailing={
+              subtitle={enquiry.email}
+              facts={[
+                { label: "Source", value: orgTypeMeta(enquiry.source).singular },
+                {
+                  label: "Received",
+                  value: enquiry.createdAt.toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  }),
+                },
+              ]}
+              status={
                 <div className="flex items-center gap-2">
                   {enquiry.transcript && <Pill tone="violet">Chat</Pill>}
                   <Pill tone={STATUS_TONE[enquiry.status]}>
@@ -94,23 +105,25 @@ export default async function AdminEnquiriesPage({
                         ? "Converted"
                         : "Archived"}
                   </Pill>
-                  {enquiry.status === "new" && (
-                    <ActionForm
-                      action={archiveEnquiry}
-                      submitLabel="Archive"
-                      pendingLabel="…"
-                      successMessage="Archived."
-                      hiddenFields={{ id: enquiry.id }}
-                      size="sm"
-                      variant="secondary"
-                      layout="inline"
-                    />
-                  )}
                 </div>
+              }
+              actions={
+                enquiry.status === "new" ? (
+                  <ActionForm
+                    action={archiveEnquiry}
+                    submitLabel="Archive"
+                    pendingLabel="…"
+                    successMessage="Archived."
+                    hiddenFields={{ id: enquiry.id }}
+                    size="sm"
+                    variant="secondary"
+                    layout="inline"
+                  />
+                ) : undefined
               }
             />
           ))}
-        </div>
+        </RecordList>
       )}
     </div>
   );
