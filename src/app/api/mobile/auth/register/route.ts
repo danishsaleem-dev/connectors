@@ -62,6 +62,7 @@ export async function POST(request: Request) {
     isAdmin: false,
     orgType: profile.orgType,
     orgName: profile.orgName,
+    onboardingCompletedAt: profile.onboardingCompletedAt,
     handoffToken,
     sessionToken,
   });
