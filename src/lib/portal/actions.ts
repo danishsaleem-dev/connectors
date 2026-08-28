@@ -1045,6 +1045,33 @@ export async function resetUserPassword(
   }
 }
 
+/** The admin-chosen counterpart to resetUserPassword's auto-generated one —
+ * same validation floor as self-service signup (8 chars), no email sent
+ * since the admin is choosing this themselves rather than handing off a
+ * password they've never seen. */
+export async function setUserPassword(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdminUser();
+    const userId = str(formData, "userId");
+    const password = str(formData, "password");
+    if (!userId) return { ok: false, error: "Missing account." };
+    if (!password || password.length < 8) {
+      return { ok: false, error: "Use a password of at least 8 characters." };
+    }
+
+    const passwordHash = await hashPassword(password);
+    await getDb().update(users).set({ passwordHash }).where(eq(users.id, userId));
+
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("setUserPassword", err, "Couldn't set that password.");
+  }
+}
+
 export async function deleteUser(
   _prevState: ActionState,
   formData: FormData,
