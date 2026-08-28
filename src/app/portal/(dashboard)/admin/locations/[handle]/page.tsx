@@ -9,13 +9,13 @@ import { listPropertyOwners } from "@/lib/db/queries";
 import { ActionForm } from "@/components/portal/ActionForm";
 import { AddressPicker } from "@/components/portal/AddressPicker";
 import { PortalHeader } from "@/components/portal/PortalHeader";
-import { PropertyMedia } from "@/components/portal/PropertyMedia";
 import { PropertyMediaFields } from "@/components/portal/PropertyMediaFields";
 import { Panel } from "@/components/portal/ui";
 import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui";
 import { deleteProperty, saveProperty } from "@/lib/portal/actions";
 import { PROPERTY_STATUS_LABEL, PROPERTY_TYPE_LABEL } from "@/lib/portal/domain";
 import { isUuid } from "@/lib/portal/admin-href";
+import { resolveMediaUrl } from "@/lib/storage/media";
 
 export const metadata: Metadata = {
   title: "Edit location",
@@ -43,7 +43,14 @@ export default async function AdminLocationDetailPage({
     .limit(1);
   if (!location) notFound();
 
-  const owners = await listPropertyOwners();
+  const [owners, initialPhotos, initialVideoUrl] = await Promise.all([
+    listPropertyOwners(),
+    Promise.all(
+      (location.photos ?? []).map(async (path) => ({ path, previewUrl: await resolveMediaUrl(path) })),
+    ),
+    resolveMediaUrl(location.video),
+  ]);
+  const initialVideo = location.video ? { path: location.video, previewUrl: initialVideoUrl } : null;
 
   return (
     <div>
@@ -115,10 +122,11 @@ export default async function AdminLocationDetailPage({
           <Field label="Description" className="sm:col-span-2">
             <Textarea name="description" rows={3} defaultValue={location.description ?? ""} />
           </Field>
-          <div className="sm:col-span-2">
-            <PropertyMedia photos={location.photos} video={location.video} />
-          </div>
-          <PropertyMediaFields organizationId={location.organizationId} />
+          <PropertyMediaFields
+            organizationId={location.organizationId}
+            initialPhotos={initialPhotos}
+            initialVideo={initialVideo}
+          />
         </ActionForm>
 
         <div className="mt-6 border-t border-[var(--border)] pt-6">

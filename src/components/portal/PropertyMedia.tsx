@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { PlayCircle } from "lucide-react";
 import { resolveMediaUrl, resolveMediaUrls } from "@/lib/storage/media";
 
 /**
@@ -22,15 +23,16 @@ export async function PropertyMedia({
 
   return (
     <div className="mt-3 flex flex-wrap gap-2">
-      {resolvedPhotos.map((url, i) => (
+      {resolvedPhotos.map((url) => (
         <a
           key={url}
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sm text-violet-600 underline underline-offset-4"
+          className="block h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-[var(--border)] transition-opacity hover:opacity-80"
         >
-          Photo{resolvedPhotos.length > 1 ? ` ${i + 1}` : ""}
+          {/* eslint-disable-next-line @next/next/no-img-element -- private signed Storage URL */}
+          <img src={url} alt="" className="h-full w-full object-cover" />
         </a>
       ))}
       {resolvedVideo && (
@@ -38,8 +40,9 @@ export async function PropertyMedia({
           href={resolvedVideo}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sm text-violet-600 underline underline-offset-4"
+          className="flex h-16 w-16 shrink-0 flex-col items-center justify-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--surface-sunken)] text-[11px] text-violet-600 underline-offset-4 hover:underline"
         >
+          <PlayCircle size={18} />
           Video
         </a>
       )}
