@@ -508,6 +508,12 @@ export const messages = pgTable("messages", {
   authorIsAdmin: boolean("author_is_admin").notNull(),
   body: text("body").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  /** Only ever set on an admin-authored message — the org's read state of
+   * it. Org-authored messages have no "unread to yourself" state, so this
+   * stays null on those forever. Backs the app's Notifications tab: an
+   * admin message with no readAt is an unread notification; opening the
+   * Messages tab marks the whole thread read at once. */
+  readAt: timestamp("read_at", { withTimezone: true }),
 });
 
 /* ------------------------------------------------------------------ */
