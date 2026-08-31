@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { mobileProfileForUserId, verifyMobileSession } from "@/lib/auth/mobile-session";
-import { listAllProperties } from "@/lib/db/queries";
-import { resolveMediaUrls } from "@/lib/storage/media";
+import { listAllProperties, listFavoritePropertyIds } from "@/lib/db/queries";
+import { toMobileLocation } from "@/lib/portal/mobile-location";
 
 export const runtime = "nodejs";
 
@@ -20,6 +20,13 @@ export const runtime = "nodejs";
  * code rather than SQL, and the same per-listing resolveMediaUrls call to
  * exchange each private Storage path for a short-lived signed URL before
  * this ever leaves the server as JSON.
+ *
+ * Deliberately doesn't return organizationName (or anything else that
+ * identifies the landlord) — no party in the portal contacts another
+ * directly, only through Connectors, so a browsing brand never learns who
+ * owns a listing before an admin facilitates that. The website's own
+ * LocationCard never carries this field either (see LocationCardData);
+ * this used to include it and that was a real gap, not a design choice.
  */
 export async function GET(request: Request) {
   const session = await verifyMobileSession(request);
@@ -35,32 +42,12 @@ export async function GET(request: Request) {
     );
   }
 
-  const all = await listAllProperties();
+  const [all, favoriteIds] = await Promise.all([
+    listAllProperties(),
+    listFavoritePropertyIds(session.organizationId!),
+  ]);
   const pool = all.filter((p) => p.status !== "withdrawn");
-  const locations = await Promise.all(
-    pool.map(async (p) => ({
-      id: p.id,
-      title: p.title,
-      propertyType: p.propertyType,
-      city: p.city,
-      country: p.country,
-      area: p.area,
-      sizeSqft: p.sizeSqft,
-      dimensions: p.dimensions,
-      floorLevel: p.floorLevel,
-      parkingAvailable: p.parkingAvailable,
-      rentAmount: p.rentAmount,
-      rentPeriod: p.rentPeriod,
-      currency: p.currency,
-      availableFrom: p.availableFrom,
-      status: p.status,
-      featured: p.featured,
-      description: p.description,
-      video: p.video,
-      organizationName: p.organizationName,
-      photoUrls: await resolveMediaUrls(p.photos ?? []),
-    })),
-  );
+  const locations = await Promise.all(pool.map((p) => toMobileLocation(p, favoriteIds.has(p.id))));
 
   return NextResponse.json({ ok: true, locations });
 }

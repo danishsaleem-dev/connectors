@@ -3,7 +3,7 @@ import { desc, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
 import { organizations, properties } from "@/lib/db/schema";
 import { verifyMobileSession } from "@/lib/auth/mobile-session";
-import { resolveMediaUrls } from "@/lib/storage/media";
+import { toMobileLocation } from "@/lib/portal/mobile-location";
 import { orgTypeMeta } from "@/lib/portal/domain";
 
 export const runtime = "nodejs";
@@ -46,30 +46,7 @@ export async function GET(request: Request) {
     .where(eq(properties.organizationId, org.id))
     .orderBy(desc(properties.createdAt));
 
-  const locations = await Promise.all(
-    rows.map(async (p) => ({
-      id: p.id,
-      title: p.title,
-      propertyType: p.propertyType,
-      city: p.city,
-      country: p.country,
-      area: p.area,
-      sizeSqft: p.sizeSqft,
-      dimensions: p.dimensions,
-      floorLevel: p.floorLevel,
-      parkingAvailable: p.parkingAvailable,
-      rentAmount: p.rentAmount,
-      rentPeriod: p.rentPeriod,
-      currency: p.currency,
-      availableFrom: p.availableFrom,
-      status: p.status,
-      featured: p.featured,
-      description: p.description,
-      video: p.video,
-      organizationName: org.name,
-      photoUrls: await resolveMediaUrls(p.photos ?? []),
-    })),
-  );
+  const locations = await Promise.all(rows.map((p) => toMobileLocation(p)));
 
   return NextResponse.json({ ok: true, locations });
 }
