@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, count, countDistinct, desc, eq, inArray, ne } from "drizzle-orm";
+import { and, asc, count, countDistinct, desc, eq, gte, inArray, ne } from "drizzle-orm";
 import { getDb } from "./client";
 import {
   brandProfiles,
@@ -9,6 +9,7 @@ import {
   franchiseeProfiles,
   investorProfiles,
   landlordProfiles,
+  messages,
   notes,
   organizations,
   properties,
@@ -210,6 +211,17 @@ export async function listExpertiseSuggestions() {
   return [...set].sort((a, b) => a.localeCompare(b));
 }
 
+/** Same idea as listExpertiseSuggestions, for the separate industries axis
+ * (see the `industries` column comment on the consultants table). */
+export async function listIndustrySuggestions() {
+  const rows = await getDb().select({ industries: consultants.industries }).from(consultants);
+  const set = new Set<string>();
+  for (const row of rows) {
+    for (const tag of row.industries ?? []) if (tag) set.add(tag);
+  }
+  return [...set].sort((a, b) => a.localeCompare(b));
+}
+
 /** Gated the same way as the listing — an unpublished (or not-yet-reviewed)
  * consultant's page 404s rather than being reachable by guessing a URL. */
 export async function getPublishedConsultantBySlug(slug: string) {
@@ -250,6 +262,111 @@ export async function listFavoritePropertyIds(organizationId: string): Promise<S
     .from(propertyFavorites)
     .where(eq(propertyFavorites.organizationId, organizationId));
   return new Set(rows.map((r) => r.propertyId));
+}
+
+export type OrgAnalytics = {
+  messagesSent30d: number;
+  messagesSentPrev30d: number;
+  repliesReceived30d: number;
+  repliesReceivedPrev30d: number;
+  savedByYou: number;
+  savedByOthers: number;
+  messagesByWeek: { label: string; count: number }[];
+  topProperties: { id: string; title: string; city: string; saves: number }[];
+};
+
+/**
+ * Backs the app's Analytics screen with only what's genuinely measurable
+ * today — there's no page-view/event-tracking pipeline anywhere in the
+ * product, so "profile views" and "introductions" (the two stats the
+ * screen invented before this) have no honest source and are dropped
+ * rather than faked. What's real: the org's own message thread (every
+ * "Inquire" and general contact ultimately lands there) and the existing
+ * favorites feature, in both directions — how many properties this org
+ * has saved, and how many saves its own properties (if it owns any) have
+ * drawn from everyone else. A non-property-owning org (brand, franchisee,
+ * investor, vendor, consultant) naturally gets a real, honest zero for
+ * the saved-by-others/top-properties fields rather than a special case.
+ */
+export async function getOrgAnalytics(organizationId: string): Promise<OrgAnalytics> {
+  const db = getDb();
+  const now = Date.now();
+  const day = 24 * 60 * 60 * 1000;
+  const start60 = new Date(now - 60 * day);
+  const start30 = new Date(now - 30 * day);
+
+  const [threadRows, [{ total: savedByYou }], ownProperties] = await Promise.all([
+    db
+      .select({ authorIsAdmin: messages.authorIsAdmin, createdAt: messages.createdAt })
+      .from(messages)
+      .where(and(eq(messages.organizationId, organizationId), gte(messages.createdAt, start60))),
+    db
+      .select({ total: count() })
+      .from(propertyFavorites)
+      .where(eq(propertyFavorites.organizationId, organizationId)),
+    db
+      .select({ id: properties.id, title: properties.title, city: properties.city })
+      .from(properties)
+      .where(eq(properties.organizationId, organizationId)),
+  ]);
+
+  let messagesSent30d = 0;
+  let messagesSentPrev30d = 0;
+  let repliesReceived30d = 0;
+  let repliesReceivedPrev30d = 0;
+  for (const row of threadRows) {
+    const recent = row.createdAt >= start30;
+    if (row.authorIsAdmin) {
+      if (recent) repliesReceived30d++;
+      else repliesReceivedPrev30d++;
+    } else {
+      if (recent) messagesSent30d++;
+      else messagesSentPrev30d++;
+    }
+  }
+
+  // Four weekly buckets covering the last 30 days, oldest first — hand-rolled
+  // rather than a SQL date_trunc, matching the app's own "no charting
+  // dependency for four bars" call on the frontend.
+  const weekMs = 7 * day;
+  const weekStart = now - 4 * weekMs;
+  const weekCounts = [0, 0, 0, 0];
+  for (const row of threadRows) {
+    const t = row.createdAt.getTime();
+    if (t < weekStart) continue;
+    const idx = Math.min(3, Math.floor((t - weekStart) / weekMs));
+    weekCounts[idx]++;
+  }
+  const messagesByWeek = weekCounts.map((c, i) => ({ label: `W${i + 1}`, count: c }));
+
+  let savedByOthers = 0;
+  let topProperties: OrgAnalytics["topProperties"] = [];
+  const ownIds = ownProperties.map((p) => p.id);
+  if (ownIds.length > 0) {
+    const favRows = await db
+      .select({ propertyId: propertyFavorites.propertyId, total: count() })
+      .from(propertyFavorites)
+      .where(inArray(propertyFavorites.propertyId, ownIds))
+      .groupBy(propertyFavorites.propertyId);
+    const favMap = new Map(favRows.map((r) => [r.propertyId, r.total]));
+    savedByOthers = favRows.reduce((sum, r) => sum + r.total, 0);
+    topProperties = ownProperties
+      .map((p) => ({ id: p.id, title: p.title, city: p.city, saves: favMap.get(p.id) ?? 0 }))
+      .filter((p) => p.saves > 0)
+      .sort((a, b) => b.saves - a.saves)
+      .slice(0, 4);
+  }
+
+  return {
+    messagesSent30d,
+    messagesSentPrev30d,
+    repliesReceived30d,
+    repliesReceivedPrev30d,
+    savedByYou,
+    savedByOthers,
+    messagesByWeek,
+    topProperties,
+  };
 }
 
 /** Every role gets this, admin included, which is why it's keyed on userId

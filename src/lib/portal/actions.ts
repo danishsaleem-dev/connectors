@@ -528,6 +528,7 @@ export async function saveConsultant(
       title: str(formData, "title"),
       photoUrl: str(formData, "photoUrl"),
       expertise: jsonEntries<ConsultantExpertise>(formData, "expertise"),
+      industries: list(formData, "industries"),
       yearsExperience: num(formData, "yearsExperience"),
       bio: sanitizeRichText(str(formData, "bio")),
       experience: jsonEntries<ConsultantExperience>(formData, "experience"),

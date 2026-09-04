@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ConsultantCard } from "@/components/ConsultantCard";
+import { ConsultantsFilterBar } from "@/components/ConsultantsFilterBar";
 import { CtaSection } from "@/components/CtaSection";
 import { FaqVideoSection } from "@/components/FaqVideoSection";
 import { Photo } from "@/components/Photo";
@@ -38,6 +38,24 @@ export default async function ConsultantsPage() {
   const withPhotos = await Promise.all(
     consultants.map(async (c) => ({ ...c, photoUrl: await resolveMediaUrl(c.photoUrl) })),
   );
+
+  // Filter options come from what's actually on the published roster, not
+  // the full suggestion history (which includes unpublished/draft tags) —
+  // an option here always has at least one matching result.
+  const industrySet = new Set<string>();
+  const expertiseSet = new Set<string>();
+  for (const c of withPhotos) {
+    for (const i of c.industries ?? []) industrySet.add(i);
+    for (const e of c.expertise ?? []) if (e?.name) expertiseSet.add(e.name);
+  }
+  const filterableConsultants = withPhotos.map((c) => ({
+    id: c.id,
+    slug: c.slug ?? c.id,
+    name: c.name,
+    photoUrl: c.photoUrl,
+    industries: c.industries ?? [],
+    expertise: (c.expertise ?? []).map((e) => e.name).filter(Boolean),
+  }));
 
   return (
     <>
@@ -144,17 +162,11 @@ export default async function ConsultantsPage() {
               </div>
             </div>
           ) : (
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {withPhotos.map((c, i) => (
-                <Reveal key={c.id} i={i % 3}>
-                  <ConsultantCard
-                    slug={c.slug ?? c.id}
-                    name={c.name}
-                    photoUrl={c.photoUrl}
-                  />
-                </Reveal>
-              ))}
-            </div>
+            <ConsultantsFilterBar
+              consultants={filterableConsultants}
+              industries={[...industrySet].sort((a, b) => a.localeCompare(b))}
+              expertise={[...expertiseSet].sort((a, b) => a.localeCompare(b))}
+            />
           )}
         </div>
 

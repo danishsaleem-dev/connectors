@@ -5,7 +5,7 @@ import { eq, or } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth/current-user";
 import { getDb } from "@/lib/db/client";
 import { consultants, users } from "@/lib/db/schema";
-import { listExpertiseSuggestions } from "@/lib/db/queries";
+import { listExpertiseSuggestions, listIndustrySuggestions } from "@/lib/db/queries";
 import { ActionForm } from "@/components/portal/ActionForm";
 import { ConsultantLogin } from "@/components/portal/ConsultantLogin";
 import { ExpertiseEditor } from "@/components/portal/ExpertiseEditor";
@@ -14,6 +14,7 @@ import { MediaPicker } from "@/components/portal/MediaPicker";
 import { PortalHeader } from "@/components/portal/PortalHeader";
 import { RepeatableEntries } from "@/components/portal/RepeatableEntries";
 import { RichText } from "@/components/portal/RichText";
+import { TagsEditor } from "@/components/portal/TagsEditor";
 import { Panel, Pill } from "@/components/portal/ui";
 import { Checkbox, Field, Input } from "@/components/ui";
 import { resolveMediaUrl } from "@/lib/storage/media";
@@ -62,9 +63,10 @@ export default async function AdminConsultantDetailPage({
     .limit(1);
   if (!consultant) notFound();
 
-  const [photoUrl, expertiseSuggestions] = await Promise.all([
+  const [photoUrl, expertiseSuggestions, industrySuggestions] = await Promise.all([
     resolveMediaUrl(consultant.photoUrl),
     listExpertiseSuggestions(),
+    listIndustrySuggestions(),
   ]);
   // Null for a consultant the admin typed in by hand — they have no
   // organization and so no account until one is issued below.
@@ -132,6 +134,17 @@ export default async function AdminConsultantDetailPage({
                           name="title"
                           defaultValue={consultant.title ?? ""}
                           placeholder="e.g. Hospitality Operations Consultant"
+                        />
+                      </Field>
+                      <Field
+                        label="Industries"
+                        hint="Categories they advise in — used to filter the public listing"
+                        className="sm:col-span-2"
+                      >
+                        <TagsEditor
+                          name="industries"
+                          initial={consultant.industries ?? []}
+                          suggestions={industrySuggestions}
                         />
                       </Field>
                       <Field label="Years of experience">

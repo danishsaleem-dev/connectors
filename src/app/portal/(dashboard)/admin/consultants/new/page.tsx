@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth/current-user";
-import { listExpertiseSuggestions } from "@/lib/db/queries";
+import { listExpertiseSuggestions, listIndustrySuggestions } from "@/lib/db/queries";
 import { ActionForm } from "@/components/portal/ActionForm";
 import { MediaPicker } from "@/components/portal/MediaPicker";
 import { PortalHeader } from "@/components/portal/PortalHeader";
 import { RepeatableEntries } from "@/components/portal/RepeatableEntries";
 import { RichText } from "@/components/portal/RichText";
+import { TagsEditor } from "@/components/portal/TagsEditor";
 import { Panel } from "@/components/portal/ui";
 import { Checkbox, Field, Input } from "@/components/ui";
 import { saveConsultant } from "@/lib/portal/actions";
@@ -18,7 +19,10 @@ export const metadata: Metadata = {
 
 export default async function AdminConsultantNewPage() {
   await requireAdmin();
-  const expertiseSuggestions = await listExpertiseSuggestions();
+  const [expertiseSuggestions, industrySuggestions] = await Promise.all([
+    listExpertiseSuggestions(),
+    listIndustrySuggestions(),
+  ]);
 
   return (
     <div>
@@ -46,6 +50,13 @@ export default async function AdminConsultantNewPage() {
           </Field>
           <Field label="Title" hint="Optional" className="sm:col-span-2">
             <Input name="title" placeholder="e.g. Hospitality Operations Consultant" />
+          </Field>
+          <Field
+            label="Industries"
+            hint="Categories they advise in — used to filter the public listing"
+            className="sm:col-span-2"
+          >
+            <TagsEditor name="industries" suggestions={industrySuggestions} />
           </Field>
           <div className="sm:col-span-2">
             <span className="mb-2 block text-[13px] font-medium">Areas of expertise</span>

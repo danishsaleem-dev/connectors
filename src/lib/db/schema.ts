@@ -467,6 +467,11 @@ export const consultants = pgTable("consultants", {
   slug: text("slug").unique(),
   photoUrl: text("photo_url"),
   expertise: jsonb("expertise").$type<ConsultantExpertise[]>(),
+  /** Industry categories this consultant advises in ("Food & Beverage",
+   * "Retail") — a different axis from expertise above, which is skill/
+   * competency tags ("Financial Management"). Plain text[], not jsonb like
+   * expertise, since these are bare labels with no per-tag description. */
+  industries: text("industries").array(),
   yearsExperience: integer("years_experience"),
   bio: text("bio"),
   /** Repeatable admin-entered groups, stored as JSON rather than child
