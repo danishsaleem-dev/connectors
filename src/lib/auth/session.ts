@@ -157,6 +157,75 @@ export async function verifyHandoffToken(
   }
 }
 
+/**
+ * Carries a *verified* Google/Apple identity across the gap between "we
+ * know who you are" and "we know what kind of account you want".
+ *
+ * A provider tells us an email and a name; it can't tell us whether this
+ * person is a brand, a landlord or an investor, or what their company is
+ * called — and `createAccount` needs both. So a first-time OAuth sign-in
+ * doesn't create anything: it returns one of these, the app collects the
+ * missing fields, and /api/mobile/auth/oauth/complete finishes the job.
+ *
+ * It has to be a signed token rather than the app just posting the email
+ * back, or anyone could sign up as anyone: the signature is what proves
+ * this server verified the identity itself, moments ago. Short TTL because
+ * it only has to survive one form, and `purpose` keeps it from being
+ * replayed anywhere a session or handoff token is accepted.
+ */
+export type OAuthSignupPayload = {
+  purpose: "oauth-signup";
+  provider: "google" | "apple";
+  subject: string;
+  email: string;
+  name: string | null;
+  exp: number;
+};
+
+const OAUTH_SIGNUP_TTL_SECONDS = 60 * 15;
+
+export async function createOAuthSignupToken(
+  payload: Omit<OAuthSignupPayload, "exp" | "purpose">,
+) {
+  const body: OAuthSignupPayload = {
+    purpose: "oauth-signup",
+    ...payload,
+    exp: Date.now() + OAUTH_SIGNUP_TTL_SECONDS * 1000,
+  };
+  const encoded = toBase64Url(new TextEncoder().encode(JSON.stringify(body)).buffer as ArrayBuffer);
+  const key = await getKey();
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(encoded));
+  return `${encoded}.${toBase64Url(signature)}`;
+}
+
+export async function verifyOAuthSignupToken(
+  token: string | undefined | null,
+): Promise<OAuthSignupPayload | null> {
+  if (!token) return null;
+  const [encoded, signature] = token.split(".");
+  if (!encoded || !signature) return null;
+
+  try {
+    const key = await getKey();
+    const valid = await crypto.subtle.verify(
+      "HMAC",
+      key,
+      fromBase64Url(signature),
+      new TextEncoder().encode(encoded),
+    );
+    if (!valid) return null;
+
+    const payload = JSON.parse(
+      new TextDecoder().decode(fromBase64Url(encoded)),
+    ) as OAuthSignupPayload;
+    if (payload.purpose !== "oauth-signup") return null;
+    if (payload.exp < Date.now()) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
 /** Shared by the web login/register Server Actions and anything else that
  * needs to sign someone in on this request. */
 export async function setSessionCookie(payload: {

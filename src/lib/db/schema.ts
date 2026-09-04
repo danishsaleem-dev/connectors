@@ -74,7 +74,15 @@ export const organizations = pgTable("organizations", {
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   email: varchar("email", { length: 255 }).notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
+  /** Null for an account created through Google/Apple sign-in — it has no
+   * password at all, rather than an unusable random one that would look
+   * password-capable to `verifyCredentials`. */
+  passwordHash: text("password_hash"),
+  /** "google" | "apple" for an OAuth account, null for a password one.
+   * Sign-in matches on the provider's verified email; these two record
+   * which provider vouched for the account and its stable `sub` claim. */
+  authProvider: text("auth_provider"),
+  providerSubject: text("provider_subject"),
   name: text("name").notNull(),
   isAdmin: boolean("is_admin").notNull().default(false),
   organizationId: uuid("organization_id").references(() => organizations.id, {

@@ -16,6 +16,11 @@ export async function verifyCredentials(email: string, password: string) {
 
   // Same generic "not found" outcome either way — never confirm whether an
   // email exists via timing or response shape.
-  if (!user || !(await verifyPassword(password, user.passwordHash))) return null;
+  //
+  // A null passwordHash means a Google/Apple account, which has no password
+  // to check: it must fail here rather than reaching verifyPassword, so no
+  // input can ever be "correct" for an account that never set one.
+  if (!user || !user.passwordHash) return null;
+  if (!(await verifyPassword(password, user.passwordHash))) return null;
   return user;
 }

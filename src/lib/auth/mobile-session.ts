@@ -2,7 +2,12 @@ import "server-only";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
 import { organizations, users } from "@/lib/db/schema";
-import { verifySessionToken, type SessionPayload } from "./session";
+import {
+  createHandoffToken,
+  createSessionToken,
+  verifySessionToken,
+  type SessionPayload,
+} from "./session";
 
 /**
  * Reads and verifies the app's bearer session token from a mobile API
@@ -67,6 +72,45 @@ export async function mobileProfileFor(user: {
     orgType: org?.type ?? null,
     orgName: org?.name ?? null,
     onboardingCompletedAt: org?.onboardingCompletedAt?.toISOString() ?? null,
+  };
+}
+
+/**
+ * The exact JSON body every "you're signed in now" endpoint returns —
+ * login, register and Google/Apple sign-in alike, so the app can parse one
+ * shape regardless of how someone got here (see AuthResult in the app).
+ *
+ * Two tokens for two jobs: `sessionToken` is the long-lived one the app
+ * stores and sends as a Bearer header; `handoffToken` is the short-lived,
+ * single-purpose one that gets a *browser* signed in via /portal/handoff.
+ * See session.ts's createHandoffToken for why they can't be the same token.
+ */
+export async function mobileAuthResponse(user: {
+  id: string;
+  name: string;
+  isAdmin: boolean;
+  organizationId: string | null;
+}) {
+  const claims = {
+    userId: user.id,
+    isAdmin: user.isAdmin,
+    organizationId: user.organizationId,
+  };
+  const [handoffToken, sessionToken, profile] = await Promise.all([
+    createHandoffToken(claims),
+    createSessionToken(claims),
+    mobileProfileFor(user),
+  ]);
+
+  return {
+    ok: true as const,
+    name: profile.name,
+    isAdmin: profile.isAdmin,
+    orgType: profile.orgType,
+    orgName: profile.orgName,
+    onboardingCompletedAt: profile.onboardingCompletedAt,
+    handoffToken,
+    sessionToken,
   };
 }
 

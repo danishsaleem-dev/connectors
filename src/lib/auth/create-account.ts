@@ -22,7 +22,12 @@ export type CreateAccountInput = {
   organizationName: string;
   name: string;
   email: string;
-  password: string;
+  /** Omitted for a Google/Apple signup, which has no password to set —
+   * `provider` is given instead. Exactly one of the two is expected; a
+   * password account gets a hash and null provider columns, an OAuth
+   * account the reverse. */
+  password?: string;
+  provider?: { name: "google" | "apple"; subject: string };
   discipline?: string;
 };
 
@@ -101,6 +106,7 @@ export async function createAccount(input: CreateAccountInput): Promise<CreateAc
   const name = input.name.trim();
   const email = input.email.trim().toLowerCase();
   const password = input.password;
+  const provider = input.provider ?? null;
   const rawDiscipline = (input.discipline ?? "").trim();
   // Validated against the label map rather than trusted from the caller —
   // the column is an enum, so an unrecognised value would fail the insert.
@@ -113,7 +119,11 @@ export async function createAccount(input: CreateAccountInput): Promise<CreateAc
   if (orgName.length < 2) return { ok: false, error: "Enter your company or organization name." };
   if (name.length < 2) return { ok: false, error: "Enter your name." };
   if (!isValidEmail(email)) return { ok: false, error: "Enter a valid email address." };
-  if (password.length < 8) return { ok: false, error: "Use a password of at least 8 characters." };
+  // Only enforced for a password signup. An OAuth one has no password by
+  // design, and its email was verified by the provider rather than typed.
+  if (!provider && (password ?? "").length < 8) {
+    return { ok: false, error: "Use a password of at least 8 characters." };
+  }
   if (type === "vendor" && !discipline) return { ok: false, error: "Choose what you do." };
 
   try {
@@ -128,10 +138,17 @@ export async function createAccount(input: CreateAccountInput): Promise<CreateAc
 
     await createProfileFor(type, org.id, orgName, discipline);
 
-    const passwordHash = await hashPassword(password);
+    const passwordHash = provider ? null : await hashPassword(password!);
     const [user] = await db
       .insert(users)
-      .values({ email, name, organizationId: org.id, passwordHash })
+      .values({
+        email,
+        name,
+        organizationId: org.id,
+        passwordHash,
+        authProvider: provider?.name ?? null,
+        providerSubject: provider?.subject ?? null,
+      })
       .returning();
 
     return { ok: true, user };

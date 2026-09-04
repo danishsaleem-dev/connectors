@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { verifyCredentials } from "@/lib/auth/credentials";
-import { mobileProfileFor } from "@/lib/auth/mobile-session";
-import { createHandoffToken, createSessionToken } from "@/lib/auth/session";
+import { mobileAuthResponse } from "@/lib/auth/mobile-session";
 
 export const runtime = "nodejs";
 
@@ -47,28 +46,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Incorrect email or password." }, { status: 401 });
   }
 
-  const [handoffToken, sessionToken, profile] = await Promise.all([
-    createHandoffToken({
-      userId: user.id,
-      isAdmin: user.isAdmin,
-      organizationId: user.organizationId,
-    }),
-    createSessionToken({
-      userId: user.id,
-      isAdmin: user.isAdmin,
-      organizationId: user.organizationId,
-    }),
-    mobileProfileFor(user),
-  ]);
-
-  return NextResponse.json({
-    ok: true,
-    name: profile.name,
-    isAdmin: profile.isAdmin,
-    orgType: profile.orgType,
-    orgName: profile.orgName,
-    onboardingCompletedAt: profile.onboardingCompletedAt,
-    handoffToken,
-    sessionToken,
-  });
+  return NextResponse.json(await mobileAuthResponse(user));
 }

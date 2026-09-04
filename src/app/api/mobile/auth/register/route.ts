@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAccount } from "@/lib/auth/create-account";
-import { mobileProfileFor } from "@/lib/auth/mobile-session";
-import { createHandoffToken, createSessionToken } from "@/lib/auth/session";
+import { mobileAuthResponse } from "@/lib/auth/mobile-session";
 import type { OrgType } from "@/lib/db/schema";
 
 export const runtime = "nodejs";
@@ -42,28 +41,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: result.error }, { status: 400 });
   }
 
-  const [handoffToken, sessionToken, profile] = await Promise.all([
-    createHandoffToken({
-      userId: result.user.id,
-      isAdmin: false,
-      organizationId: result.user.organizationId,
-    }),
-    createSessionToken({
-      userId: result.user.id,
-      isAdmin: false,
-      organizationId: result.user.organizationId,
-    }),
-    mobileProfileFor(result.user),
-  ]);
-
-  return NextResponse.json({
-    ok: true,
-    name: profile.name,
-    isAdmin: false,
-    orgType: profile.orgType,
-    orgName: profile.orgName,
-    onboardingCompletedAt: profile.onboardingCompletedAt,
-    handoffToken,
-    sessionToken,
-  });
+  return NextResponse.json(await mobileAuthResponse(result.user));
 }
