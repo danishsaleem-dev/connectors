@@ -14,6 +14,7 @@ import {
   organizations,
   properties,
   propertyFavorites,
+  propertyInterests,
   vendorProfiles,
   type OrgType,
 } from "./schema";
@@ -50,6 +51,59 @@ export async function listPropertyOwners() {
     .from(organizations)
     .where(inArray(organizations.type, ["landlord", "developer"]))
     .orderBy(organizations.name);
+}
+
+/** Who can plausibly be "interested" in a property, for the admin picker
+ * on propertyInterests — the demand side of a deal, not another landlord/
+ * developer, vendor or consultant. */
+export async function listInterestCandidateOrgs() {
+  return getDb()
+    .select({ id: organizations.id, name: organizations.name, type: organizations.type })
+    .from(organizations)
+    .where(inArray(organizations.type, ["brand", "franchisee", "investor"]))
+    .orderBy(organizations.name);
+}
+
+/** Every org an admin has flagged as interested in this one property, for
+ * the admin's own property-edit page. */
+export async function listPropertyInterests(propertyId: string) {
+  return getDb()
+    .select({
+      id: propertyInterests.id,
+      note: propertyInterests.note,
+      createdAt: propertyInterests.createdAt,
+      organizationId: organizations.id,
+      organizationName: organizations.name,
+      organizationType: organizations.type,
+    })
+    .from(propertyInterests)
+    .innerJoin(organizations, eq(organizations.id, propertyInterests.organizationId))
+    .where(eq(propertyInterests.propertyId, propertyId))
+    .orderBy(desc(propertyInterests.createdAt));
+}
+
+/** Every interest flagged across all of one org's own properties — what
+ * the app's landlord/developer "Interested" screen and Opportunities tab
+ * show. Only the interested org's name and type are selected, deliberately
+ * — no email/phone column exists to leak here even by accident, matching
+ * the "never see another party's contact details directly" rule. */
+export async function listInterestsForOrg(organizationId: string) {
+  return getDb()
+    .select({
+      id: propertyInterests.id,
+      note: propertyInterests.note,
+      createdAt: propertyInterests.createdAt,
+      propertyId: properties.id,
+      propertyTitle: properties.title,
+      propertyCity: properties.city,
+      organizationName: organizations.name,
+      organizationType: organizations.type,
+    })
+    .from(propertyInterests)
+    .innerJoin(properties, eq(properties.id, propertyInterests.propertyId))
+    .innerJoin(organizations, eq(organizations.id, propertyInterests.organizationId))
+    .where(eq(properties.organizationId, organizationId))
+    .orderBy(desc(propertyInterests.createdAt));
 }
 
 /**

@@ -1,37 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getStorageAdmin, STORAGE_BUCKET } from "@/lib/storage/client";
-
-const PURPOSES = {
-  property: {
-    // HEIC/HEIF is the default iPhone camera format — photos are only ever
-    // stored and linked here, never decoded or rendered inline, so there's no
-    // browser-compatibility reason to reject a format we don't display anyway.
-    allowed: [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "image/heic",
-      "image/heif",
-      "video/mp4",
-      "video/quicktime",
-    ],
-    maxBytes: 50 * 1024 * 1024,
-  },
-  document: {
-    allowed: [
-      "application/pdf",
-      "image/jpeg",
-      "image/png",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    ],
-    maxBytes: 20 * 1024 * 1024,
-  },
-} as const;
-
-type Purpose = keyof typeof PURPOSES;
+import {
+  getStorageAdmin,
+  STORAGE_BUCKET,
+  UPLOAD_PURPOSES as PURPOSES,
+  type UploadPurpose as Purpose,
+} from "@/lib/storage/client";
 
 /**
  * Issues a short-lived signed upload URL for a direct browser-to-Supabase

@@ -11,6 +11,53 @@ import { createClient } from "@supabase/supabase-js";
  */
 export const STORAGE_BUCKET = "portal-files";
 
+/** Shared by every upload path (web media-actions, mobile's own upload
+ * route) — one place to change the limits rather than two copies that can
+ * drift. Not exported from media-actions.ts itself: a "use server" file may
+ * only export async functions, so a plain constant has to live here. */
+export const UPLOAD_ALLOWED_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+];
+export const UPLOAD_MAX_BYTES = 10 * 1024 * 1024;
+
+/** Same two purposes /api/upload has always issued signed-upload tokens
+ * for — moved here so the mobile upload route (which uploads server-side,
+ * skipping that signed-URL dance entirely) validates against the exact
+ * same rules instead of a second, driftable copy. */
+export const UPLOAD_PURPOSES = {
+  property: {
+    // HEIC/HEIF is the default iPhone camera format — photos are only ever
+    // stored and linked, never decoded or rendered inline, so there's no
+    // browser-compatibility reason to reject a format we don't display anyway.
+    allowed: [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/heic",
+      "image/heif",
+      "video/mp4",
+      "video/quicktime",
+    ],
+    maxBytes: 50 * 1024 * 1024,
+  },
+  document: {
+    allowed: [
+      "application/pdf",
+      "image/jpeg",
+      "image/png",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ],
+    maxBytes: 20 * 1024 * 1024,
+  },
+} as const;
+
+export type UploadPurpose = keyof typeof UPLOAD_PURPOSES;
+
 /**
  * Lazy for the same reason getDb() is: importing this file must not throw
  * when Supabase isn't configured (local dev without upload enabled).

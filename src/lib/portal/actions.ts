@@ -22,6 +22,7 @@ import {
   organizations,
   properties,
   propertyFavorites,
+  propertyInterests,
   requests,
   users,
   vendorProfiles,
@@ -163,7 +164,10 @@ export async function writeProfile(type: OrgType, organizationId: string, formDa
         .where(eq(brandProfiles.organizationId, organizationId));
       break;
     }
-    case "franchisee":
+    case "franchisee": {
+      // Only written when actually chosen, same reasoning as brand's logo —
+      // resaving the rest of the profile shouldn't blank out an existing one.
+      const photoPath = str(formData, "photo");
       await db
         .update(franchiseeProfiles)
         .set({
@@ -174,20 +178,26 @@ export async function writeProfile(type: OrgType, organizationId: string, formDa
           experienceYears: num(formData, "experienceYears"),
           hasExistingBusiness: bool(formData, "hasExistingBusiness"),
           notes: str(formData, "notes"),
+          ...(photoPath ? { photoUrl: photoPath } : {}),
         })
         .where(eq(franchiseeProfiles.organizationId, organizationId));
       break;
-    case "landlord":
+    }
+    case "landlord": {
+      const photoPath = str(formData, "photo");
       await db
         .update(landlordProfiles)
         .set({
           cities: list(formData, "cities"),
           portfolioSize: num(formData, "portfolioSize"),
           notes: str(formData, "notes"),
+          ...(photoPath ? { photoUrl: photoPath } : {}),
         })
         .where(eq(landlordProfiles.organizationId, organizationId));
       break;
-    case "developer":
+    }
+    case "developer": {
+      const photoPath = str(formData, "photo");
       await db
         .update(developerProfiles)
         .set({
@@ -198,10 +208,13 @@ export async function writeProfile(type: OrgType, organizationId: string, formDa
           occupancyPercent: num(formData, "occupancyPercent"),
           openingDate: str(formData, "openingDate"),
           notes: str(formData, "notes"),
+          ...(photoPath ? { photoUrl: photoPath } : {}),
         })
         .where(eq(developerProfiles.organizationId, organizationId));
       break;
-    case "investor":
+    }
+    case "investor": {
+      const photoPath = str(formData, "photo");
       await db
         .update(investorProfiles)
         .set({
@@ -211,9 +224,11 @@ export async function writeProfile(type: OrgType, organizationId: string, formDa
           horizonMonths: num(formData, "horizonMonths"),
           investmentTypes: list(formData, "investmentTypes"),
           notes: str(formData, "notes"),
+          ...(photoPath ? { photoUrl: photoPath } : {}),
         })
         .where(eq(investorProfiles.organizationId, organizationId));
       break;
+    }
     case "vendor": {
       // A vendor's profile is public-facing, so it carries the two fields no
       // other type has: a URL slug and a publish gate. The slug is derived
@@ -445,6 +460,71 @@ export async function deleteProperty(
     return { ok: true };
   } catch (err) {
     return fail("deleteProperty", err, "Couldn't remove that property.");
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Property interest — admin-curated, shown to the landlord/developer */
+/* ------------------------------------------------------------------ */
+
+/** Admin-only: flags an org as interested in a property. See schema.ts's
+ * propertyInterests doc comment for why this exists as its own signal
+ * rather than exposing propertyFavorites, or a direct org-to-org channel. */
+export async function createPropertyInterest(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdminUser();
+    const propertyId = str(formData, "propertyId");
+    const organizationId = str(formData, "organizationId");
+    if (!propertyId || !organizationId) {
+      return { ok: false, error: "Choose an organization." };
+    }
+
+    const [property] = await getDb()
+      .select({ organizationId: properties.organizationId })
+      .from(properties)
+      .where(eq(properties.id, propertyId))
+      .limit(1);
+    if (!property) return { ok: false, error: "Property not found." };
+    if (property.organizationId === organizationId) {
+      return { ok: false, error: "That organization already owns this property." };
+    }
+
+    await getDb()
+      .insert(propertyInterests)
+      .values({ propertyId, organizationId, note: str(formData, "note") })
+      // Flagging the same org twice on the same property just refreshes
+      // the note/date rather than erroring — an admin re-flagging isn't a
+      // mistake to block, it's "this is still current."
+      .onConflictDoUpdate({
+        target: [propertyInterests.propertyId, propertyInterests.organizationId],
+        set: { note: str(formData, "note"), createdAt: new Date() },
+      });
+
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("createPropertyInterest", err, "Couldn't flag that interest.");
+  }
+}
+
+export async function deletePropertyInterest(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdminUser();
+    const id = str(formData, "id");
+    if (!id) return { ok: false, error: "Missing record." };
+
+    await getDb().delete(propertyInterests).where(eq(propertyInterests.id, id));
+
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("deletePropertyInterest", err, "Couldn't remove that.");
   }
 }
 

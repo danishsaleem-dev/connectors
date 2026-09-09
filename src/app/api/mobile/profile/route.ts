@@ -6,6 +6,7 @@ import { organizations } from "@/lib/db/schema";
 import { getProfile } from "@/lib/db/queries";
 import { writeProfile } from "@/lib/portal/actions";
 import { verifyMobileSession } from "@/lib/auth/mobile-session";
+import { resolveMediaUrl } from "@/lib/storage/media";
 
 export const runtime = "nodejs";
 
@@ -43,6 +44,18 @@ export async function GET(request: Request) {
   }
 
   const profile = await getProfile(org.type, org.id);
+
+  // Every type's "profile picture" lives under a different column name
+  // (brand/vendor: logoUrl, everyone else: photoUrl — see schema.ts) and is
+  // a private Storage path, not a renderable URL. Normalizing both to one
+  // resolved `photoUrl` here means the app never needs to know which column
+  // name its own org type happens to use.
+  const rawPhotoPath =
+    (profile?.logoUrl as string | null | undefined) ??
+    (profile?.photoUrl as string | null | undefined) ??
+    null;
+  const photoUrl = rawPhotoPath ? await resolveMediaUrl(rawPhotoPath) : null;
+
   return NextResponse.json({
     ok: true,
     orgType: org.type,
@@ -53,6 +66,7 @@ export async function GET(request: Request) {
       onboardingCompletedAt: org.onboardingCompletedAt?.toISOString() ?? null,
     },
     profile: profile ?? {},
+    photoUrl,
   });
 }
 
@@ -92,15 +106,29 @@ export async function POST(request: Request) {
     }
   }
 
-  await getDb()
-    .update(organizations)
-    .set({
-      ...(body.organizationName ? { name: body.organizationName } : {}),
-      ...(body.phone ? { phone: body.phone } : {}),
-      ...(body.country ? { country: body.country } : {}),
-      ...(body.complete ? { onboardingCompletedAt: new Date(), status: "active" as const } : {}),
-    })
-    .where(eq(organizations.id, org.id));
+  // The app always sends the uploaded photo under one key ("photo"),
+  // matching every writeProfile branch except brand/vendor, which read a
+  // logo under "logo" — same normalization GET does in reverse (see its
+  // comment above). Set both keys rather than teach the app two names for
+  // one concept.
+  const photo = body.fields?.photo;
+  if (typeof photo === "string" && photo && (org.type === "brand" || org.type === "vendor")) {
+    formData.set("logo", photo);
+  }
+
+  // A save that only touches type-specific fields (the photo picker, most
+  // notably) legitimately sends none of these — Drizzle's .set() throws on
+  // an empty object rather than treating it as a no-op update, so this has
+  // to be skipped entirely rather than always called.
+  const orgValues = {
+    ...(body.organizationName ? { name: body.organizationName } : {}),
+    ...(body.phone ? { phone: body.phone } : {}),
+    ...(body.country ? { country: body.country } : {}),
+    ...(body.complete ? { onboardingCompletedAt: new Date(), status: "active" as const } : {}),
+  };
+  if (Object.keys(orgValues).length > 0) {
+    await getDb().update(organizations).set(orgValues).where(eq(organizations.id, org.id));
+  }
 
   await writeProfile(org.type, org.id, formData);
   revalidatePath("/portal", "layout");

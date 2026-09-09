@@ -123,6 +123,11 @@ export const franchiseeProfiles = pgTable("franchisee_profiles", {
   organizationId: uuid("organization_id")
     .primaryKey()
     .references(() => organizations.id, { onDelete: "cascade" }),
+  /** Private Storage path, same convention as a brand's logoUrl — the
+   * account's own profile picture, shown wherever this org sees its own
+   * account (never a public directory; only brand/vendor/consultant have
+   * one of those). */
+  photoUrl: text("photo_url"),
   budgetMin: integer("budget_min"),
   budgetMax: integer("budget_max"),
   currency: varchar("currency", { length: 3 }).notNull().default("GBP"),
@@ -140,6 +145,8 @@ export const landlordProfiles = pgTable("landlord_profiles", {
   organizationId: uuid("organization_id")
     .primaryKey()
     .references(() => organizations.id, { onDelete: "cascade" }),
+  /** Private Storage path — see franchiseeProfiles.photoUrl's comment. */
+  photoUrl: text("photo_url"),
   cities: text("cities").array(),
   portfolioSize: integer("portfolio_size"),
   notes: text("notes"),
@@ -149,6 +156,8 @@ export const developerProfiles = pgTable("developer_profiles", {
   organizationId: uuid("organization_id")
     .primaryKey()
     .references(() => organizations.id, { onDelete: "cascade" }),
+  /** Private Storage path — see franchiseeProfiles.photoUrl's comment. */
+  photoUrl: text("photo_url"),
   projectName: text("project_name"),
   projectType: text("project_type"),
   city: text("city"),
@@ -162,6 +171,8 @@ export const investorProfiles = pgTable("investor_profiles", {
   organizationId: uuid("organization_id")
     .primaryKey()
     .references(() => organizations.id, { onDelete: "cascade" }),
+  /** Private Storage path — see franchiseeProfiles.photoUrl's comment. */
+  photoUrl: text("photo_url"),
   ticketMin: integer("ticket_min"),
   ticketMax: integer("ticket_max"),
   currency: varchar("currency", { length: 3 }).notNull().default("GBP"),
@@ -399,6 +410,43 @@ export const propertyFavorites = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [unique().on(table.organizationId, table.propertyId)],
+);
+
+/**
+ * An admin-curated signal that a specific org (a brand, franchisee or
+ * investor, typically) is interested in a landlord/developer's property —
+ * what backs the app's "Interested" screen and, for a landlord/developer,
+ * the Opportunities tab itself (see mobile-interests.ts).
+ *
+ * Deliberately its own table rather than reusing propertyFavorites: a
+ * favorite is self-reported by the org that saved it and never seen by
+ * anyone else; this is the opposite direction — admin decides what a
+ * landlord gets told, same "everything goes through Connectors staff"
+ * rule as every other cross-org signal in the product. The landlord is
+ * shown who's interested (name, type) but never their contact details —
+ * following up still goes through Connectors, via the existing message
+ * thread, not a new direct channel this table would otherwise imply.
+ */
+export const propertyInterests = pgTable(
+  "property_interests",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    propertyId: uuid("property_id")
+      .notNull()
+      .references(() => properties.id, { onDelete: "cascade" }),
+    /** The interested party — a brand/franchisee/investor org, not the
+     * property's own owner. Nothing in the schema enforces "not the
+     * owner"; the admin form does (see actions.ts). */
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    /** Optional context for the landlord — "Looking for a flagship unit
+     * in this district" — never anything from the interested org's own
+     * private profile, always written by the admin flagging it. */
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [unique().on(table.propertyId, table.organizationId)],
 );
 
 /** Free-form scratchpad notes, one per portal account — keyed on the user,

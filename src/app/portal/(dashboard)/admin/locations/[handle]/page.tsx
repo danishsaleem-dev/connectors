@@ -5,17 +5,28 @@ import { eq, or } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth/current-user";
 import { getDb } from "@/lib/db/client";
 import { properties } from "@/lib/db/schema";
-import { listPropertyOwners } from "@/lib/db/queries";
+import { listInterestCandidateOrgs, listPropertyInterests, listPropertyOwners } from "@/lib/db/queries";
 import { ActionForm } from "@/components/portal/ActionForm";
 import { AddressPicker } from "@/components/portal/AddressPicker";
 import { PortalHeader } from "@/components/portal/PortalHeader";
 import { PropertyMediaFields } from "@/components/portal/PropertyMediaFields";
-import { Panel } from "@/components/portal/ui";
+import { Panel, Pill } from "@/components/portal/ui";
 import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui";
-import { deleteProperty, saveProperty } from "@/lib/portal/actions";
+import {
+  createPropertyInterest,
+  deleteProperty,
+  deletePropertyInterest,
+  saveProperty,
+} from "@/lib/portal/actions";
 import { PROPERTY_STATUS_LABEL, PROPERTY_TYPE_LABEL } from "@/lib/portal/domain";
 import { isUuid } from "@/lib/portal/admin-href";
 import { resolveMediaUrl } from "@/lib/storage/media";
+
+const ORG_TYPE_LABEL: Record<string, string> = {
+  brand: "Brand",
+  franchisee: "Franchisee",
+  investor: "Investor",
+};
 
 export const metadata: Metadata = {
   title: "Edit location",
@@ -43,13 +54,17 @@ export default async function AdminLocationDetailPage({
     .limit(1);
   if (!location) notFound();
 
-  const [owners, initialPhotos, initialVideoUrl] = await Promise.all([
+  const [owners, initialPhotos, initialVideoUrl, interestCandidates, interests] = await Promise.all([
     listPropertyOwners(),
     Promise.all(
       (location.photos ?? []).map(async (path) => ({ path, previewUrl: await resolveMediaUrl(path) })),
     ),
     resolveMediaUrl(location.video),
+    listInterestCandidateOrgs(),
+    listPropertyInterests(location.id),
   ]);
+  const flaggedOrgIds = new Set(interests.map((i) => i.organizationId));
+  const availableCandidates = interestCandidates.filter((o) => !flaggedOrgIds.has(o.id));
   const initialVideo = location.video ? { path: location.video, previewUrl: initialVideoUrl } : null;
 
   return (
@@ -140,6 +155,80 @@ export default async function AdminLocationDetailPage({
             size="sm"
           />
         </div>
+      </Panel>
+
+      <Panel
+        title="Interested organizations"
+        className="mt-5"
+        action={<Pill>{interests.length}</Pill>}
+      >
+        <p className="mb-4 text-xs text-[var(--muted)]">
+          Shown to the property&apos;s owner in the app — name and type only, never contact
+          details. Following up still goes through Connectors, the same as every other
+          introduction.
+        </p>
+
+        {interests.length > 0 && (
+          <div className="mb-5 space-y-2">
+            {interests.map((interest) => (
+              <div
+                key={interest.id}
+                className="flex items-start justify-between gap-3 rounded-xl border border-[var(--border)] p-3"
+              >
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium">{interest.organizationName}</span>
+                    <Pill tone="violet">
+                      {ORG_TYPE_LABEL[interest.organizationType] ?? interest.organizationType}
+                    </Pill>
+                  </div>
+                  {interest.note && (
+                    <p className="mt-1 text-xs text-[var(--muted)]">{interest.note}</p>
+                  )}
+                </div>
+                <ActionForm
+                  action={deletePropertyInterest}
+                  submitLabel="Remove"
+                  pendingLabel="Removing…"
+                  hiddenFields={{ id: interest.id }}
+                  variant="secondary"
+                  size="sm"
+                  layout="inline"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {availableCandidates.length > 0 ? (
+          <ActionForm
+            action={createPropertyInterest}
+            submitLabel="Flag as interested"
+            pendingLabel="Saving…"
+            successMessage="Flagged."
+            hiddenFields={{ propertyId: location.id }}
+          >
+            <Field label="Organization" className="sm:col-span-2">
+              <Select name="organizationId" required defaultValue="">
+                <option value="" disabled>
+                  Choose an organization…
+                </option>
+                {availableCandidates.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.name} — {ORG_TYPE_LABEL[o.type] ?? o.type}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Note" hint="Optional — shown to the landlord/developer" className="sm:col-span-2">
+              <Input name="note" placeholder="e.g. Looking for a flagship unit in this district" />
+            </Field>
+          </ActionForm>
+        ) : (
+          <p className="text-xs text-[var(--muted)]">
+            Every brand/franchisee/investor org is already flagged on this property.
+          </p>
+        )}
       </Panel>
     </div>
   );

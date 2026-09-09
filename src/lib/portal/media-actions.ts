@@ -4,7 +4,7 @@ import { and, desc, eq, ilike, isNull, or } from "drizzle-orm";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getDb } from "@/lib/db/client";
 import { media } from "@/lib/db/schema";
-import { uploadServerFile } from "@/lib/storage/client";
+import { UPLOAD_ALLOWED_TYPES, UPLOAD_MAX_BYTES, uploadServerFile } from "@/lib/storage/client";
 import { resolveMediaUrl } from "@/lib/storage/media";
 
 /**
@@ -19,9 +19,6 @@ export type MediaItem = {
   /** Resolved signed URL, ready to render — null if signing failed. */
   url: string | null;
 };
-
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
-const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
 /**
  * An admin browsing a specific org's page sees that org's images; a
@@ -73,10 +70,10 @@ export async function uploadMediaToLibrary(
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) return { ok: false, error: "Choose a file." };
-  if (!ALLOWED_TYPES.includes(file.type)) {
+  if (!UPLOAD_ALLOWED_TYPES.includes(file.type)) {
     return { ok: false, error: "That file type isn't supported." };
   }
-  if (file.size > MAX_UPLOAD_BYTES) {
+  if (file.size > UPLOAD_MAX_BYTES) {
     return { ok: false, error: "File is too large — 10MB max." };
   }
 
