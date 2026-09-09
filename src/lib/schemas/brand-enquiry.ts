@@ -38,6 +38,13 @@ export const brandEnquirySchema = z
 
     // Additional Services Required — optional
     additionalServices: z.array(z.string()).optional(),
+
+    // Uploads — private Storage paths from the app's own upload endpoint
+    // (see /api/mobile/upload), not raw files; nothing here validates file
+    // content since the upload step already gated type/size.
+    companyProfilePath: z.string().trim().optional(),
+    brandLogoPath: z.string().trim().optional(),
+    outletPhotoPaths: z.array(z.string()).optional(),
   })
   .refine((data) => data.areaMax >= data.areaMin, {
     message: "Maximum area should be greater than or equal to the minimum.",

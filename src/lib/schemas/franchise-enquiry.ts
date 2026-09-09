@@ -24,6 +24,9 @@ export const franchiseEnquirySchema = z
     cities: z.array(z.string()).min(1, "Select at least one territory."),
     otherCity: z.string().trim().optional(),
     operationalCapability: z.string().min(1, "Select how you'd operate the franchise."),
+
+    // Upload — a private Storage path, see brand-enquiry.ts's comment.
+    cvPath: z.string().trim().optional(),
   })
   .refine(
     (data) => !data.cities.includes("Other") || Boolean(data.otherCity?.length),

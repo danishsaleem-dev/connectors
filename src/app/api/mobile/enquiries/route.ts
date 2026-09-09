@@ -17,6 +17,16 @@ function withOther(values: string[], other?: string) {
   );
 }
 
+/** Turns a set of (label, present?) pairs into one "Attachments: X, Y"
+ * line, or null when nothing was attached — the summary is plain text
+ * (see AdminEnquiryDetailPage), so this names what came in rather than
+ * linking to it; the actual Storage paths still land in `payload` either
+ * way, they're just not surfaced as clickable links yet. */
+function attachmentsLine(entries: [string, boolean][]): string | null {
+  const present = entries.filter(([, has]) => has).map(([label]) => label);
+  return present.length > 0 ? `Attachments: ${present.join(", ")}` : null;
+}
+
 const SOURCES: Record<
   string,
   {
@@ -68,6 +78,14 @@ const SOURCES: Record<
           ? `Additional services: ${data.additionalServices.join(", ")}`
           : null,
         "",
+        attachmentsLine([
+          ["Company Profile", Boolean(data.companyProfilePath)],
+          ["Brand Logo", Boolean(data.brandLogoPath)],
+          [
+            `Outlet Photos (${data.outletPhotoPaths?.length ?? 0})`,
+            Boolean(data.outletPhotoPaths?.length),
+          ],
+        ]),
         "Submitted via the Connectors app.",
       ]
         .filter((l): l is string => l !== null)
@@ -99,6 +117,7 @@ const SOURCES: Record<
         `Preferred territory: ${withOther(data.cities, data.otherCity).join(", ")}`,
         `Operational plan: ${data.operationalCapability}`,
         "",
+        attachmentsLine([["CV / Business Profile", Boolean(data.cvPath)]]),
         "Submitted via the Connectors app.",
       ]
         .filter((l): l is string => l !== null)
@@ -126,6 +145,13 @@ const SOURCES: Record<
         `Expected monthly rent: ${data.expectedRent}`,
         `Occupancy status: ${data.occupancyStatus}`,
         "",
+        attachmentsLine([
+          [
+            `Property Photos (${data.propertyPhotoPaths?.length ?? 0})`,
+            Boolean(data.propertyPhotoPaths?.length),
+          ],
+          ["Floor Plan / Layout", Boolean(data.floorPlanPath)],
+        ]),
         "Submitted via the Connectors app.",
       ]
         .filter((l): l is string => l !== null)
@@ -156,6 +182,9 @@ const SOURCES: Record<
         `Preferred city/region: ${withOther(data.cities, data.otherCity).join(", ")}`,
         `Investment horizon: ${data.horizon}`,
         "",
+        attachmentsLine([
+          ["Investment Profile / Company Overview", Boolean(data.investmentProfilePath)],
+        ]),
         "Submitted via the Connectors app.",
       ]
         .filter((l): l is string => l !== null)
@@ -173,8 +202,9 @@ const SOURCES: Record<
  * One JSON endpoint for all four enquiry wizards in the app, dispatched by
  * `source` — same zod schemas and the same recordEnquiry() call the website's
  * four Server Actions use, so an app submission lands in the admin queue
- * exactly like a web one. No file uploads (the app's wizard doesn't collect
- * them yet — see EnquiryWizard's FileFieldSpec).
+ * exactly like a web one. File fields (see EnquiryWizard's FileFieldSpec)
+ * send a Storage path from /api/mobile/upload, not a raw file — the schema
+ * just validates it's a string/array of strings, same as any other field.
  *
  * Auth is read opportunistically, not required: the current app version
  * always sends a token now that login is mandatory before reaching a form,

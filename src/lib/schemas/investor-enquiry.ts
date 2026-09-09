@@ -21,6 +21,9 @@ export const investorEnquirySchema = z
     cities: z.array(z.string()).min(1, "Select at least one city or region."),
     otherCity: z.string().trim().optional(),
     horizon: z.string().min(1, "Select an investment horizon."),
+
+    // Upload — a private Storage path, see brand-enquiry.ts's comment.
+    investmentProfilePath: z.string().trim().optional(),
   })
   .refine(
     (data) => !data.cities.includes("Other") || Boolean(data.otherCity?.length),

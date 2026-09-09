@@ -306,6 +306,31 @@ export async function listConsultantInquiries() {
     .orderBy(desc(consultantInquiries.createdAt));
 }
 
+/** What a self-service consultant sees on the app's "Requests" tab —
+ * only inquiries about *their own* consultants row, and only once an
+ * admin has moved one to "released" (see consultantInquiryStatusEnum's
+ * doc comment). Resolves the consultants row from the org id itself
+ * rather than trusting a consultantId the caller could pass in. */
+export async function listReleasedInquiriesForConsultantOrg(organizationId: string) {
+  return getDb()
+    .select({
+      id: consultantInquiries.id,
+      name: consultantInquiries.name,
+      email: consultantInquiries.email,
+      message: consultantInquiries.message,
+      createdAt: consultantInquiries.createdAt,
+    })
+    .from(consultantInquiries)
+    .innerJoin(consultants, eq(consultantInquiries.consultantId, consultants.id))
+    .where(
+      and(
+        eq(consultants.organizationId, organizationId),
+        eq(consultantInquiries.status, "released"),
+      ),
+    )
+    .orderBy(desc(consultantInquiries.createdAt));
+}
+
 /* ------------------------------------------------------------------ */
 /*  Favorites, notes — brand-side locations and the per-user scratchpad */
 /* ------------------------------------------------------------------ */

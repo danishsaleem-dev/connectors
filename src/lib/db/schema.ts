@@ -543,11 +543,22 @@ export const consultants = pgTable("consultants", {
 /** Deliberately its own table, not folded into `enquiries` below — a
  * consultant inquiry is about one specific consultant (no org-type concept
  * applies) and never becomes a portal organization the way the four public
- * enquiry forms can via convertEnquiry, so it doesn't share their lifecycle. */
+ * enquiry forms can via convertEnquiry, so it doesn't share their lifecycle.
+ *
+ * "released" is the one status that changes who can see the row: new/read/
+ * archived are all admin-only queue states (see listConsultantInquiries),
+ * but a released inquiry is also returned to the consultant themselves via
+ * /api/mobile/consultant-requests — the app's "Requests" tab. Nothing
+ * reaches the consultant until an admin explicitly moves it there; the
+ * inquirer's own name/email/message is shown in full once released (unlike
+ * propertyInterests' contact-free rule) because they submitted it
+ * specifically to reach this consultant, the same as emailing them
+ * directly would. */
 export const consultantInquiryStatusEnum = pgEnum("consultant_inquiry_status", [
   "new",
   "read",
   "archived",
+  "released",
 ]);
 
 export const consultantInquiries = pgTable("consultant_inquiries", {

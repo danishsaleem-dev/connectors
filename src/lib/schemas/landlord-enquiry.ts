@@ -23,6 +23,10 @@ export const landlordEnquirySchema = z
     availableFrom: z.string().min(1, "Select an availability date."),
     expectedRent: z.string().min(1, "Select an expected monthly rent range."),
     occupancyStatus: z.string().min(1, "Select the current occupancy status."),
+
+    // Uploads — private Storage paths, see brand-enquiry.ts's comment.
+    propertyPhotoPaths: z.array(z.string()).optional(),
+    floorPlanPath: z.string().trim().optional(),
   })
   .refine(
     (data) => !data.cities.includes("Other") || Boolean(data.otherCity?.length),

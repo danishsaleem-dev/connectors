@@ -13,11 +13,26 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const STATUS_TONE = { new: "amber", read: "violet", archived: "neutral" } as const;
+const STATUS_TONE = {
+  new: "amber",
+  read: "violet",
+  archived: "neutral",
+  released: "green",
+} as const;
+
+const STATUS_LABEL: Record<string, string> = {
+  new: "New",
+  read: "Read",
+  archived: "Archived",
+  released: "Released",
+};
 
 const STATUS_OPTIONS = [
   { value: "new", label: "New" },
   { value: "read", label: "Read" },
+  // Shown to the consultant in the app's Requests tab the moment it's set
+  // to this — see consultantInquiryStatusEnum's doc comment.
+  { value: "released", label: "Released (visible to the consultant)" },
   { value: "archived", label: "Archived" },
 ];
 
@@ -75,13 +90,7 @@ export default async function AdminConsultantInquiriesPage({
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <Pill tone={STATUS_TONE[inquiry.status]}>
-                    {inquiry.status === "new"
-                      ? "New"
-                      : inquiry.status === "read"
-                        ? "Read"
-                        : "Archived"}
-                  </Pill>
+                  <Pill tone={STATUS_TONE[inquiry.status]}>{STATUS_LABEL[inquiry.status]}</Pill>
                   <ActionForm
                     action={setConsultantInquiryStatus}
                     submitLabel="Update"
