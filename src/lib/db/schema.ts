@@ -369,6 +369,33 @@ export const franchiseOpportunities = pgTable("franchise_opportunities", {
 });
 
 /**
+ * Admin-curated "this franchisee is a match for that opportunity" signal —
+ * same shape and same reasoning as propertyInterests, just the other
+ * direction: there, admin flags an org as interested in someone else's
+ * property; here, admin flags a franchisee as a match for a brand's
+ * franchise opportunity. A franchisee never browses franchiseOpportunities
+ * (or brands, or anyone else's data) directly — this join is the entire
+ * feed their app reads from, same as vendor_opportunities for vendors.
+ */
+export const franchiseOpportunityInterests = pgTable(
+  "franchise_opportunity_interests",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    franchiseOpportunityId: uuid("franchise_opportunity_id")
+      .notNull()
+      .references(() => franchiseOpportunities.id, { onDelete: "cascade" }),
+    organizationId: uuid("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    /** Optional context for the franchisee — never anything from their own
+     * private profile, always written by the admin flagging it. */
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [unique().on(table.franchiseOpportunityId, table.organizationId)],
+);
+
+/**
  * The media library's index — one row per uploaded file, independent of
  * whatever field ends up pointing at it (a brand's logoUrl, a property's
  * photos[], a document's url are all still plain path strings; this table

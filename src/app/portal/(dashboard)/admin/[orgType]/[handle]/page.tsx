@@ -3,7 +3,11 @@ import { notFound } from "next/navigation";
 import { asc, desc, eq, or } from "drizzle-orm";
 import { requireAdmin } from "@/lib/auth/current-user";
 import { getDb } from "@/lib/db/client";
-import { getProfile } from "@/lib/db/queries";
+import {
+  getProfile,
+  listFranchiseOpportunityInterests,
+  listFranchiseOpportunityOptions,
+} from "@/lib/db/queries";
 import {
   documents,
   franchiseOpportunities,
@@ -29,8 +33,10 @@ import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui";
 import { resolveMediaUrl } from "@/lib/storage/media";
 import {
   createDocument,
+  createFranchiseOpportunityInterest,
   createVendorOpportunity,
   deleteFranchiseOpportunity,
+  deleteFranchiseOpportunityInterest,
   deleteProperty,
   deleteVendorOpportunity,
   postMessage,
@@ -90,6 +96,8 @@ export default async function AdminOrgDetailPage({
     orgMessages,
     orgFranchises,
     orgVendorOpportunities,
+    orgFranchiseOpportunityInterests,
+    franchiseOpportunityOptions,
   ] = await Promise.all([
     getProfile(org.type, org.id),
     db.select().from(users).where(eq(users.organizationId, org.id)),
@@ -119,6 +127,8 @@ export default async function AdminOrgDetailPage({
           .where(eq(vendorOpportunities.organizationId, org.id))
           .orderBy(desc(vendorOpportunities.createdAt))
       : Promise.resolve([]),
+    org.type === "franchisee" ? listFranchiseOpportunityInterests(org.id) : Promise.resolve([]),
+    org.type === "franchisee" ? listFranchiseOpportunityOptions() : Promise.resolve([]),
   ]);
 
   const logoPath =
@@ -326,6 +336,71 @@ export default async function AdminOrgDetailPage({
               </div>
             )}
           </Panel>
+                ),
+              }]
+            : []),
+          ...(org.type === "franchisee"
+            ? [{
+                id: "opportunities",
+                label: "Opportunities",
+                badge: orgFranchiseOpportunityInterests.length,
+                content: (
+        <Panel>
+          {orgFranchiseOpportunityInterests.length === 0 ? (
+            <EmptyState>No opportunities matched to this franchisee yet.</EmptyState>
+          ) : (
+            <div className="space-y-2">
+              {orgFranchiseOpportunityInterests.map((match) => (
+                <ListRow
+                  key={match.id}
+                  title={match.opportunityTitle}
+                  meta={[match.brandName, match.note].filter(Boolean).join(" · ")}
+                  trailing={
+                    <ActionForm
+                      action={deleteFranchiseOpportunityInterest}
+                      submitLabel="Remove"
+                      pendingLabel="…"
+                      successMessage="Removed."
+                      hiddenFields={{ id: match.id }}
+                      size="sm"
+                      variant="secondary"
+                      className="sm:grid-cols-1"
+                    />
+                  }
+                />
+              ))}
+            </div>
+          )}
+          <div className="mt-5 border-t border-[var(--border)] pt-5">
+            <p className="mb-3 text-[11px] uppercase tracking-[0.14em] text-[var(--muted)]">
+              Match this franchisee to an opportunity
+            </p>
+            <ActionForm
+              action={createFranchiseOpportunityInterest}
+              submitLabel="Add match"
+              pendingLabel="Adding…"
+              successMessage="Matched."
+              hiddenFields={{ organizationId: org.id }}
+              size="sm"
+            >
+              <Field label="Opportunity" className="sm:col-span-2">
+                <Select name="franchiseOpportunityId" required defaultValue="">
+                  <option value="" disabled>
+                    Choose an opportunity
+                  </option>
+                  {franchiseOpportunityOptions.map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.brandName} — {opt.title} ({opt.city})
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Note" className="sm:col-span-2" hint="Optional — context for the franchisee">
+                <Input name="note" />
+              </Field>
+            </ActionForm>
+          </div>
+        </Panel>
                 ),
               }]
             : []),

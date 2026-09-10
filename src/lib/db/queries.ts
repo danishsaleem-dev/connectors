@@ -7,6 +7,8 @@ import {
   consultants,
   developerProfiles,
   franchiseeProfiles,
+  franchiseOpportunities,
+  franchiseOpportunityInterests,
   investorProfiles,
   landlordProfiles,
   messages,
@@ -105,6 +107,77 @@ export async function listInterestsForOrg(organizationId: string) {
     .innerJoin(organizations, eq(organizations.id, propertyInterests.organizationId))
     .where(eq(properties.organizationId, organizationId))
     .orderBy(desc(propertyInterests.createdAt));
+}
+
+/** Every published franchise opportunity, brand name included — the admin
+ * picker's option list when matching one to a franchisee (see
+ * franchiseOpportunityInterests' doc comment). */
+export async function listFranchiseOpportunityOptions() {
+  return getDb()
+    .select({
+      id: franchiseOpportunities.id,
+      title: franchiseOpportunities.title,
+      city: franchiseOpportunities.city,
+      brandName: organizations.name,
+    })
+    .from(franchiseOpportunities)
+    .innerJoin(organizations, eq(organizations.id, franchiseOpportunities.organizationId))
+    .orderBy(organizations.name, franchiseOpportunities.title);
+}
+
+/** Every opportunity an admin has matched to this franchisee, for the
+ * admin's own franchisee-edit page. */
+export async function listFranchiseOpportunityInterests(organizationId: string) {
+  return getDb()
+    .select({
+      id: franchiseOpportunityInterests.id,
+      note: franchiseOpportunityInterests.note,
+      createdAt: franchiseOpportunityInterests.createdAt,
+      opportunityId: franchiseOpportunities.id,
+      opportunityTitle: franchiseOpportunities.title,
+      brandName: organizations.name,
+    })
+    .from(franchiseOpportunityInterests)
+    .innerJoin(
+      franchiseOpportunities,
+      eq(franchiseOpportunities.id, franchiseOpportunityInterests.franchiseOpportunityId),
+    )
+    .innerJoin(organizations, eq(organizations.id, franchiseOpportunities.organizationId))
+    .where(eq(franchiseOpportunityInterests.organizationId, organizationId))
+    .orderBy(desc(franchiseOpportunityInterests.createdAt));
+}
+
+/** What a self-service franchisee sees on the app's Opportunities tab —
+ * only opportunities an admin has matched to *their own* org, with the
+ * real opportunity fields (city, territory, investment range) rather than
+ * a re-typed summary, since franchise_opportunities already has them. */
+export async function listMatchedFranchiseOpportunitiesForOrg(organizationId: string) {
+  return getDb()
+    .select({
+      id: franchiseOpportunityInterests.id,
+      note: franchiseOpportunityInterests.note,
+      createdAt: franchiseOpportunityInterests.createdAt,
+      opportunityId: franchiseOpportunities.id,
+      title: franchiseOpportunities.title,
+      city: franchiseOpportunities.city,
+      country: franchiseOpportunities.country,
+      territory: franchiseOpportunities.territory,
+      investmentMin: franchiseOpportunities.investmentMin,
+      investmentMax: franchiseOpportunities.investmentMax,
+      currency: franchiseOpportunities.currency,
+      spaceRequiredSqft: franchiseOpportunities.spaceRequiredSqft,
+      status: franchiseOpportunities.status,
+      description: franchiseOpportunities.description,
+      brandName: organizations.name,
+    })
+    .from(franchiseOpportunityInterests)
+    .innerJoin(
+      franchiseOpportunities,
+      eq(franchiseOpportunities.id, franchiseOpportunityInterests.franchiseOpportunityId),
+    )
+    .innerJoin(organizations, eq(organizations.id, franchiseOpportunities.organizationId))
+    .where(eq(franchiseOpportunityInterests.organizationId, organizationId))
+    .orderBy(desc(franchiseOpportunityInterests.createdAt));
 }
 
 /**

@@ -13,6 +13,7 @@ import {
   developerProfiles,
   documents,
   franchiseOpportunities,
+  franchiseOpportunityInterests,
   franchiseeProfiles,
   investorProfiles,
   landlordProfiles,
@@ -526,6 +527,70 @@ export async function deletePropertyInterest(
     return { ok: true };
   } catch (err) {
     return fail("deletePropertyInterest", err, "Couldn't remove that.");
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Franchise opportunity interest — admin-matched, shown to the       */
+/*  franchisee (mirrors propertyInterests, the other direction)        */
+/* ------------------------------------------------------------------ */
+
+/** Admin-only: matches a franchisee to a franchise opportunity. See
+ * schema.ts's franchiseOpportunityInterests doc comment. */
+export async function createFranchiseOpportunityInterest(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdminUser();
+    const franchiseOpportunityId = str(formData, "franchiseOpportunityId");
+    const organizationId = str(formData, "organizationId");
+    if (!franchiseOpportunityId || !organizationId) {
+      return { ok: false, error: "Choose an opportunity." };
+    }
+
+    const [opportunity] = await getDb()
+      .select({ id: franchiseOpportunities.id })
+      .from(franchiseOpportunities)
+      .where(eq(franchiseOpportunities.id, franchiseOpportunityId))
+      .limit(1);
+    if (!opportunity) return { ok: false, error: "Opportunity not found." };
+
+    await getDb()
+      .insert(franchiseOpportunityInterests)
+      .values({ franchiseOpportunityId, organizationId, note: str(formData, "note") })
+      // Matching the same pair twice just refreshes the note/date, same
+      // reasoning as createPropertyInterest.
+      .onConflictDoUpdate({
+        target: [
+          franchiseOpportunityInterests.franchiseOpportunityId,
+          franchiseOpportunityInterests.organizationId,
+        ],
+        set: { note: str(formData, "note"), createdAt: new Date() },
+      });
+
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("createFranchiseOpportunityInterest", err, "Couldn't match that opportunity.");
+  }
+}
+
+export async function deleteFranchiseOpportunityInterest(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdminUser();
+    const id = str(formData, "id");
+    if (!id) return { ok: false, error: "Missing record." };
+
+    await getDb().delete(franchiseOpportunityInterests).where(eq(franchiseOpportunityInterests.id, id));
+
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("deleteFranchiseOpportunityInterest", err, "Couldn't remove that.");
   }
 }
 
