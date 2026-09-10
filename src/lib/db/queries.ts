@@ -15,6 +15,7 @@ import {
   properties,
   propertyFavorites,
   propertyInterests,
+  vendorOpportunities,
   vendorProfiles,
   type OrgType,
 } from "./schema";
@@ -329,6 +330,18 @@ export async function listReleasedInquiriesForConsultantOrg(organizationId: stri
       ),
     )
     .orderBy(desc(consultantInquiries.createdAt));
+}
+
+/** What a self-service vendor sees on the app's Opportunities tab — only
+ * briefs an admin has handed to *their own* org (see vendorOpportunities'
+ * doc comment). A vendor never browses anyone else's data, this or
+ * otherwise — this is the entire feed. */
+export async function listVendorOpportunities(organizationId: string) {
+  return getDb()
+    .select()
+    .from(vendorOpportunities)
+    .where(eq(vendorOpportunities.organizationId, organizationId))
+    .orderBy(desc(vendorOpportunities.createdAt));
 }
 
 /* ------------------------------------------------------------------ */

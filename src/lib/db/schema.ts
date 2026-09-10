@@ -449,6 +449,29 @@ export const propertyInterests = pgTable(
   (table) => [unique().on(table.propertyId, table.organizationId)],
 );
 
+/**
+ * Admin-authored work briefs handed to one vendor (Partners Program member)
+ * at a time — free-form, not tied to a property or brand request, since a
+ * vendor brief usually starts as a conversation on a real project rather
+ * than a database row Connectors already has. A vendor's app only ever
+ * shows their own rows here; they never browse brands/franchisees/
+ * properties directly (see orgTypeMeta's doc comment on why vendor sees
+ * neither — same reasoning as consultant).
+ */
+export const vendorOpportunities = pgTable("vendor_opportunities", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: uuid("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  /** Storage path, same convention as documents.url — optional since most
+   * briefs are just the title/description, not every one has a plan or
+   * brief document to attach. */
+  attachmentPath: text("attachment_path"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 /** Free-form scratchpad notes, one per portal account — keyed on the user,
  * not the organization, since this is the one feature every role gets
  * including admin, who has no organizationId at all. */

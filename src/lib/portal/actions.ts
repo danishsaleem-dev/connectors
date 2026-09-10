@@ -25,6 +25,7 @@ import {
   propertyInterests,
   requests,
   users,
+  vendorOpportunities,
   vendorProfiles,
   type ConsultantEducation,
   type ConsultantExperience,
@@ -525,6 +526,53 @@ export async function deletePropertyInterest(
     return { ok: true };
   } catch (err) {
     return fail("deletePropertyInterest", err, "Couldn't remove that.");
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Vendor opportunities — admin-authored briefs handed to one vendor  */
+/* ------------------------------------------------------------------ */
+
+export async function createVendorOpportunity(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdminUser();
+    const organizationId = str(formData, "organizationId");
+    const title = str(formData, "title");
+    if (!organizationId) return { ok: false, error: "No vendor to attach this to." };
+    if (!title) return { ok: false, error: "Enter a title." };
+
+    await getDb().insert(vendorOpportunities).values({
+      organizationId,
+      title,
+      description: str(formData, "description"),
+      attachmentPath: str(formData, "attachmentPath"),
+    });
+
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("createVendorOpportunity", err, "Couldn't add that opportunity.");
+  }
+}
+
+export async function deleteVendorOpportunity(
+  _prevState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  try {
+    await requireAdminUser();
+    const id = str(formData, "id");
+    if (!id) return { ok: false, error: "Missing record." };
+
+    await getDb().delete(vendorOpportunities).where(eq(vendorOpportunities.id, id));
+
+    revalidatePortal();
+    return { ok: true };
+  } catch (err) {
+    return fail("deleteVendorOpportunity", err, "Couldn't remove that.");
   }
 }
 

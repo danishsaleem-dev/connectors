@@ -12,6 +12,7 @@ import {
   properties,
   requests,
   users,
+  vendorOpportunities,
 } from "@/lib/db/schema";
 import { ActionForm } from "@/components/portal/ActionForm";
 import { AddressPicker } from "@/components/portal/AddressPicker";
@@ -28,8 +29,10 @@ import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui";
 import { resolveMediaUrl } from "@/lib/storage/media";
 import {
   createDocument,
+  createVendorOpportunity,
   deleteFranchiseOpportunity,
   deleteProperty,
+  deleteVendorOpportunity,
   postMessage,
   saveFranchiseOpportunity,
   saveProperty,
@@ -78,8 +81,16 @@ export default async function AdminOrgDetailPage({
   // than rendering the wrong profile form.
   if (!org || org.type !== meta.type) notFound();
 
-  const [profile, orgUsers, orgProperties, orgRequests, orgDocs, orgMessages, orgFranchises] =
-    await Promise.all([
+  const [
+    profile,
+    orgUsers,
+    orgProperties,
+    orgRequests,
+    orgDocs,
+    orgMessages,
+    orgFranchises,
+    orgVendorOpportunities,
+  ] = await Promise.all([
     getProfile(org.type, org.id),
     db.select().from(users).where(eq(users.organizationId, org.id)),
     db.select().from(properties).where(eq(properties.organizationId, org.id)),
@@ -100,6 +111,13 @@ export default async function AdminOrgDetailPage({
           .from(franchiseOpportunities)
           .where(eq(franchiseOpportunities.organizationId, org.id))
           .orderBy(desc(franchiseOpportunities.createdAt))
+      : Promise.resolve([]),
+    org.type === "vendor"
+      ? db
+          .select()
+          .from(vendorOpportunities)
+          .where(eq(vendorOpportunities.organizationId, org.id))
+          .orderBy(desc(vendorOpportunities.createdAt))
       : Promise.resolve([]),
   ]);
 
@@ -308,6 +326,74 @@ export default async function AdminOrgDetailPage({
               </div>
             )}
           </Panel>
+                ),
+              }]
+            : []),
+          ...(org.type === "vendor"
+            ? [{
+                id: "opportunities",
+                label: "Opportunities",
+                badge: orgVendorOpportunities.length,
+                content: (
+        <Panel>
+          {orgVendorOpportunities.length === 0 ? (
+            <EmptyState>No opportunities handed to this vendor yet.</EmptyState>
+          ) : (
+            <div className="space-y-2">
+              {orgVendorOpportunities.map((opportunity) => (
+                <ListRow
+                  key={opportunity.id}
+                  title={opportunity.title}
+                  meta={opportunity.description ?? undefined}
+                  trailing={
+                    <div className="flex items-center gap-3">
+                      {opportunity.attachmentPath && (
+                        <DocumentLink url={opportunity.attachmentPath}>File</DocumentLink>
+                      )}
+                      <ActionForm
+                        action={deleteVendorOpportunity}
+                        submitLabel="Remove"
+                        pendingLabel="…"
+                        successMessage="Removed."
+                        hiddenFields={{ id: opportunity.id }}
+                        size="sm"
+                        variant="secondary"
+                        className="sm:grid-cols-1"
+                      />
+                    </div>
+                  }
+                />
+              ))}
+            </div>
+          )}
+          <div className="mt-5 border-t border-[var(--border)] pt-5">
+            <p className="mb-3 text-[11px] uppercase tracking-[0.14em] text-[var(--muted)]">
+              Hand this vendor a new brief
+            </p>
+            <ActionForm
+              action={createVendorOpportunity}
+              submitLabel="Add opportunity"
+              pendingLabel="Adding…"
+              successMessage="Opportunity added."
+              hiddenFields={{ organizationId: org.id }}
+              size="sm"
+            >
+              <Field label="Title" className="sm:col-span-2">
+                <Input name="title" required placeholder="e.g. Fit-out design — Brand X, Lahore" />
+              </Field>
+              <Field label="Description" className="sm:col-span-2">
+                <Textarea name="description" rows={3} />
+              </Field>
+              <DocumentUpload
+                organizationId={org.id}
+                fieldName="attachmentPath"
+                required={false}
+                label="Attachment"
+                hint="Optional — a brief, plan, or reference file"
+              />
+            </ActionForm>
+          </div>
+        </Panel>
                 ),
               }]
             : []),
